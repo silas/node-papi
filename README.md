@@ -1,4 +1,4 @@
-# Rapi
+# Rapi [![Build Status](https://travis-ci.org/silas/node-rapi.png?branch=master)](https://travis-ci.org/silas/node-rapi)
 
 This is a simple HTTP client for Node.
 
