@@ -32,28 +32,24 @@ describe('Rapi', function() {
 
       self.sinon = sinon.sandbox.create();
 
-      function httpRequest(opts) {
-        var req = new events.EventEmitter();
+      function request(type) {
+        return function(opts) {
+          var req = new events.EventEmitter();
 
-        req.end = function() {
-          self.http = opts;
+          req.setTimeout = function(timeout) {
+            self.timeout = timeout;
+          };
+
+          req.end = function() {
+            self[type] = opts;
+          };
+
+          return req;
         };
-
-        return req;
       }
 
-      function httpsRequest(opts) {
-        var req = new events.EventEmitter();
-
-        req.end = function() {
-          self.https = opts;
-        };
-
-        return req;
-      }
-
-      self.sinon.stub(http, 'request', httpRequest);
-      self.sinon.stub(https, 'request', httpsRequest);
+      self.sinon.stub(http, 'request', request('http'));
+      self.sinon.stub(https, 'request', request('https'));
     });
 
     afterEach(function() {
@@ -67,7 +63,7 @@ describe('Rapi', function() {
 
       var baseUrl = protocol + '//' + hostname;
 
-      var rapi = new Rapi({ baseUrl: baseUrl });
+      var rapi = new Rapi({ baseUrl: baseUrl, timeout: 1000 });
 
       rapi.request({ method: method, path: '/one' });
 
