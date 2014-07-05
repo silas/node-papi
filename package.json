@@ -26,7 +26,7 @@
     "rest"
   ],
   "author": "Silas Sewell <silas@sewell.org>",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/silas/node-rapi/issues"
   },
