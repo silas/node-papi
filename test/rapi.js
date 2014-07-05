@@ -411,5 +411,68 @@ describe('Rapi', function() {
         done();
       });
     });
+
+    it('should return error for non-2xx', function(done) {
+      this.nock
+        .post('/post')
+        .reply(400);
+
+      var req = {
+        method: 'POST',
+        path: '/post',
+      };
+
+      this.rapi.request(req, function(err, res) {
+        should.exist(err);
+        err.message.should.eql('Bad Request');
+
+        should.exist(res);
+        res.statusCode.should.eql(400);
+
+        done();
+      });
+    });
+
+    it('should set err.message to body text', function(done) {
+      this.nock
+        .post('/post')
+        .reply(400, 'Validation error', { 'content-type': 'text/plain' });
+
+      var req = {
+        method: 'POST',
+        path: '/post',
+      };
+
+      this.rapi.request(req, function(err, res) {
+        should.exist(err);
+        err.message.should.eql('Validation error');
+
+        should.exist(res);
+        res.statusCode.should.eql(400);
+
+        done();
+      });
+    });
+
+    it('should set err.message for unknown status codes', function(done) {
+      this.nock
+        .post('/post')
+        .reply(499);
+
+      var req = {
+        method: 'POST',
+        path: '/post',
+      };
+
+      this.rapi.request(req, function(err, res) {
+        should.exist(err);
+        err.message.should.eql('Request failed: 499');
+
+        should.exist(res);
+        res.statusCode.should.eql(499);
+
+        done();
+      });
+    });
   });
 });
