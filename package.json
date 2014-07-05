@@ -1,0 +1,34 @@
+{
+  "name": "rapi",
+  "version": "0.1.0",
+  "description": "Request API",
+  "main": "lib",
+  "devDependencies": {
+    "debug": "^1.0.2",
+    "jscs": "^1.5.7",
+    "jshint": "^2.5.1",
+    "mocha": "^1.20.1",
+    "nock": "^0.40.0",
+    "should": "^4.0.4",
+    "sinon": "^1.10.2"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/jshint lib test && ./node_modules/.bin/jscs lib test && ./node_modules/.bin/mocha --recursive --require should"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/silas/node-rapi.git"
+  },
+  "keywords": [
+    "api",
+    "client",
+    "http",
+    "rest"
+  ],
+  "author": "Silas Sewell <silas@sewell.org>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/silas/node-rapi/issues"
+  },
+  "homepage": "https://github.com/silas/node-rapi"
+}
