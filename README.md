@@ -2,8 +2,6 @@
 
 This is a module for building HTTP API clients.
 
-You probably want to use a more mature module like [request][request].
-
  * [Documentation](#documentation)
  * [Example](#example)
  * [License](#license)
@@ -212,5 +210,3 @@ if (require.main === module) {
 ## License
 
 This work is licensed under the MIT License (see the LICENSE file).
-
-[request]: https://www.npmjs.org/package/request
