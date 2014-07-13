@@ -17,8 +17,8 @@ Options
  * baseUrl (String): base URL, should not include trailing slash
  * headers (Object\<String, String>, optional): headers to include in every request
  * type (String, optional, supports: form, json, text): default request body encoding type
- * encoders (Object\<String, Function>, optional): an object that maps a mime type to a function. The function should accept a single object parameter and return a string.
- * decoders (Object\<String, Function>, optional): an object that maps a mime type to a function. The function should accept a single string parameter and return an object.
+ * encoders (Object\<String, Function>, optional): an object that maps a mime type to a function. The function should accept an object and return a Buffer.
+ * decoders (Object\<String, Function>, optional): an object that maps a mime type to a function. The function should accept a Buffer or String (must support both) and return an object.
  * tags (String[], optional): tags included in `_log` calls
  * timeout (Number, optional): default number of milliseconds before request is aborted
 
