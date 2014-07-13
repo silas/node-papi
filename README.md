@@ -16,13 +16,25 @@ Initialize a new client.
 
 Options
 
- * baseUrl (String): base URL, should not include trailing slash
- * headers (Object<String, String>, optional): headers to include in every request
- * type (String, optional, supports: form, json, text): default request body encoding type
- * encoders (Object<String, Function>, optional): an object that maps a mime type to a function. The function should accept a single object parameter and return a string.
- * decoders (Object<String, Function>, optional): an object that maps a mime type to a function. The function should accept a single string parameter and return an object.
- * tags (String[], optional): tags included in `_log` calls
- * timeout (Number, optional): default number of milliseconds before request is aborted
+ * baseUrl (`String`): base URL, should not include trailing slash
+ * headers (`Object<String, String>`, *optional*): headers to include in every request
+ * type (`String`, optional, supports: form, json, text): default request body encoding type
+ * encoders (`Object<String, Function>`, *optional*): an object that maps a mime type to a function. The function should accept a single object parameter and return a string.
+ * decoders (`Object<String, Function>`, *optional*): an object that maps a mime type to a function. The function should accept a single string parameter and return an object.
+ * tags (`String[]`, *optional*): tags included in `_log` calls
+ * timeout (`Number`, *optional*): default number of milliseconds before request is aborted
+
+Usage
+
+``` javascript
+var Rapi = require('rapi').Rapi;
+
+var rapi = new Rapi({
+  baseUrl: 'https://api.github.com',
+  headers: { 'user-agent': 'RapiGitHub/0.1.0' },
+  timeout: 5 * 1000,
+});
+```
 
 ### rapi.\_request(path, options, callback)
 
@@ -30,22 +42,41 @@ Make an HTTP request.
 
 Arguments
 
- * path (String): HTTP path, can include variable segments defined by curly braces (ex: `/user/{id}`)
- * callback (Function<err, res>): request callback function
+ * path (`String`): HTTP path, can include variable segments defined by curly braces (ex: `/user/{id}`)
+ * callback (`Function<err, res>`): request callback function
 
 Options
 
- * method (String): HTTP method
- * headers (Object<String, String>, optional): HTTP headers to include in request
- * path (Object<String, String>, optional): replaces variables in request path
- * query (Object<String, String|String[]>, optional): HTTP query parameters
- * body (Object, optional): request body
- * type (String, optional, supports: form, json, text): request body encoding type
- * timeout (Number, optional): number of milliseconds before request is aborted
- * tags (String[], optional): tags included in `_log` calls
+ * method (`String`): HTTP method
+ * headers (`Object<String, String>`, *optional*): HTTP headers to include in request
+ * path (`Object<String, String>`, *optional*): replaces variables in request path
+ * query (`Object<String, String|String[]>`, *optional*): HTTP query parameters
+ * body (`Object`, *optional*): request body
+ * type (`String`, *optional*, *supports:* `form`, `json`, `text`): request body encoding type
+ * timeout (`Number`, *optional*): number of milliseconds before request is aborted
+ * tags (`String[]`, *optional*): tags included in `_log` calls
 
 There are also `_get`, `_head`, `_post`, `_put`, `_delete`, `_patch`, and
 `_options` shortcuts with the same method signature as `_request`.
+
+Usage
+
+``` javascript
+var opts = {
+  path: { username: 'silas' },
+};
+
+rapi._get('/users/{username}/gists', opts, function(err, res) {
+  if (err) {
+    console.log('error', err.message);
+  }
+
+  if (req) {
+    console.log('statusCode', res.statusCode);
+    console.log('body', res.body);
+  }
+});
+```
 
 ### rapi.\_log(tags, [data...])
 
@@ -53,8 +84,12 @@ Emit logs events.
 
 Arguments
 
- * tags (String[]): tags associated with event
- * data (optional): remaining arguments are added to data attribute
+ * tags (`String[]`): tags associated with event
+ * data (*optional*): remaining arguments are added to data attribute
+
+``` javascript
+rapi._get(['github', 'ratelimited'], 'Too many requests');
+```
 
 ## Example
 
