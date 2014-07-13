@@ -71,24 +71,42 @@ rapi._get('/users/{username}/gists', opts, function(err, res) {
     console.log('error', err.message);
   }
 
-  if (req) {
+  if (res) {
     console.log('statusCode', res.statusCode);
     console.log('body', res.body);
   }
 });
 ```
 
+Result
+
+```
+statusCode 200
+body [ { url: 'https://api.github.com/gists/9458207',
+...
+```
+
 ### rapi.\_log(tags, [data...])
 
-Emit logs events.
+Emit log events.
 
 Arguments
 
  * tags (String[]): tags associated with event
  * data (optional): remaining arguments are added to data attribute
 
+Usage
+
 ``` javascript
-rapi._get(['github', 'ratelimited'], 'Too many requests');
+rapi.on('log', console.log);
+
+rapi._log(['github', 'test'], 'one', 'two');
+```
+
+Result
+
+```
+{ data: [ 'one', 'two' ], tags: [ 'github', 'test' ] }
 ```
 
 ## Example
