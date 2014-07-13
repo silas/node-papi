@@ -524,5 +524,65 @@ describe('Rapi', function() {
         done();
       });
     });
+
+    it('should call before and after', function(done) {
+      var self = this;
+
+      var called = [];
+      var path = '/get';
+      var statusCode = 200;
+
+      self.nock
+        .get(path)
+        .reply(statusCode, { hello: 'world' });
+
+      self.rapi._before = function(ctx, next) {
+        ctx.should.have.keys('path', 'opts');
+
+        ctx.path.should.eql(path);
+        ctx.opts.should.eql({ method: 'GET' });
+
+        ctx.start = new Date();
+
+        called.push('before');
+
+        next();
+      };
+
+      self.rapi._after = function(ctx, next) {
+        ctx.should.have.keys('args', 'path', 'opts', 'start');
+
+        ctx.path.should.eql(path);
+        ctx.opts.should.eql({ method: 'GET', headers: { key: 'value' } });
+
+        ctx.args.length.should.eql(2);
+
+        var err = ctx.args[0];
+        var res = ctx.args[1];
+
+        should.not.exist(err);
+        should.exist(res);
+
+        res.should.have.properties('statusCode', 'headers', 'body');
+
+        res.statusCode.should.eql(statusCode);
+        res.headers.should.eql({ 'content-type': 'application/json' });
+        res.body.should.eql({ hello: 'world' });
+
+        called.push('after');
+
+        next();
+      };
+
+      self.rapi._get('/get', function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+
+        called.should.eql(['before', 'after']);
+
+        done();
+      });
+    });
   });
 });

@@ -107,6 +107,59 @@ Result
 { data: [ 'one', 'two' ], tags: [ 'github', 'test' ] }
 ```
 
+### rapi.\_before(ctx, next)
+
+Called before request is sent.
+
+Arguments
+
+ * ctx (Object): object containing `path` and `opts`.
+ * next (Function): continue processing request
+
+Usage
+
+``` javascript
+rapi._before = function(ctx, next) {
+  console.log('path', ctx.path);
+  console.log('opts', ctx.opts);
+
+  ctx.start = new Date();
+
+  next();
+};
+```
+
+### rapi.\_after(ctx, next)
+
+Called after request finishes.
+
+Arguments
+
+ * ctx (Object): object containing `path`, `opts`, and `args`.
+ * next (Function): continue processing request
+
+Usage
+
+``` javascript
+rapi._after = function(ctx, next) {
+  console.log('path', ctx.path);
+  console.log('elapsed', new Date() - ctx.start);
+
+  var err = opts.args[0];
+  var res = opts.args[1];
+
+  if (err) {
+    console.log('error', err.message);
+  }
+
+  if (res) {
+    console.log('response', res.statusCode);
+  }
+
+  next();
+};
+```
+
 ## Example
 
 ``` javascript
