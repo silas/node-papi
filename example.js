@@ -1,19 +1,10 @@
-# Rapi [![Build Status](https://travis-ci.org/silas/node-rapi.png?branch=master)](https://travis-ci.org/silas/node-rapi)
-
-This is a module for building HTTP API clients.
-
-You probably want to use a more mature module like [request][request].
-
-## Example
-
-``` javascript
 'use strict';
 
 /**
  * Module dependencies.
  */
 
-var Rapi = require('rapi').Rapi;
+var Rapi = require('./lib').Rapi;
 var util = require('util');
 
 /**
@@ -88,10 +79,3 @@ if (require.main === module) {
 } else {
   module.exports = GitHub;
 }
-```
-
-## License
-
-This work is licensed under the MIT License (see the LICENSE file).
-
-[request]: https://www.npmjs.org/package/request

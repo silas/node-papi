@@ -65,7 +65,7 @@ describe('Rapi', function() {
 
       var rapi = new Rapi({ baseUrl: baseUrl, timeout: 1000 });
 
-      rapi.request({ method: method, path: '/one' });
+      rapi._get('/one');
 
       should(this.http).eql({
         hostname: hostname,
@@ -87,7 +87,7 @@ describe('Rapi', function() {
 
       var rapi = new Rapi({ baseUrl: baseUrl });
 
-      rapi.request({ method: method, path: '/two' });
+      rapi._get('/two');
 
       should(this.http).eql({
         auth: auth,
@@ -108,7 +108,7 @@ describe('Rapi', function() {
 
       var rapi = new Rapi({ baseUrl: baseUrl });
 
-      rapi.request({ method: method, path: '/one' });
+      rapi._get('/one');
 
       should(this.https).eql({
         hostname: hostname,
@@ -130,7 +130,7 @@ describe('Rapi', function() {
 
       var rapi = new Rapi({ baseUrl: baseUrl });
 
-      rapi.request({ method: method, path: '/two' });
+      rapi._get('/two');
 
       should(this.https).eql({
         auth: auth,
@@ -169,12 +169,7 @@ describe('Rapi', function() {
         .get('/get')
         .reply(200, 'ok', { 'content-type': 'text/plain' });
 
-      var req = {
-        method: 'GET',
-        path: '/get',
-      };
-
-      this.rapi.request(req, function(err, res) {
+      this.rapi._get('/get', function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -192,12 +187,7 @@ describe('Rapi', function() {
           { 'content-type': 'application/json' }
         );
 
-      var req = {
-        method: 'GET',
-        path: '/get',
-      };
-
-      this.rapi.request(req, function(err, res) {
+      this.rapi._get('/get', function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -214,12 +204,7 @@ describe('Rapi', function() {
         .get('/get')
         .reply(200, 'ok');
 
-      var req = {
-        method: 'GET',
-        path: '/get',
-      };
-
-      this.rapi.request(req, function(err, res) {
+      this.rapi._get('/get', function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -233,18 +218,35 @@ describe('Rapi', function() {
       });
     });
 
+    it('should create request with path replacement', function(done) {
+      this.nock
+        .get('/hello%20world/0/hello%20world/2/')
+        .reply(200);
+
+      var opts = {
+        path: { saying: 'hello world', count: 2 },
+      };
+
+      this.rapi._get('/{saying}/0/{saying}/{count}/', opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+        res.statusCode.should.eql(200);
+
+        done();
+      });
+    });
+
     it('should create request with query parameters', function(done) {
       this.nock
         .get('/get?one=one&two=two1&two=two2')
         .reply(200);
 
-      var req = {
-        method: 'GET',
-        path: '/get',
+      var opts = {
         query: { one: 'one', two: ['two1', 'two2'] },
       };
 
-      this.rapi.request(req, function(err, res) {
+      this.rapi._get('/get', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -261,13 +263,11 @@ describe('Rapi', function() {
         .matchHeader('myKey', 'myValue')
         .reply(200);
 
-      var req = {
-        method: 'GET',
-        path: '/get',
+      var opts = {
         headers: { myKey: 'myValue' },
       };
 
-      this.rapi.request(req, function(err, res) {
+      this.rapi._get('/get', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -282,13 +282,11 @@ describe('Rapi', function() {
         .matchHeader('key', 'value')
         .reply(200);
 
-      var req = {
-        method: 'GET',
-        path: '/get',
+      var opts = {
         headers: { key: 'value' },
       };
 
-      this.rapi.request(req, function(err, res) {
+      this.rapi._request('/get', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -303,14 +301,12 @@ describe('Rapi', function() {
         .matchHeader('content-type', FORM + '; ' + CHARSET)
         .reply(200);
 
-      var req = {
-        method: 'POST',
-        path: '/post',
+      var opts = {
         type: 'form',
         body: { hello: 'world' },
       };
 
-      this.rapi.request(req, function(err, res) {
+      this.rapi._post('/post', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -324,12 +320,7 @@ describe('Rapi', function() {
         .delete('/delete')
         .reply(204);
 
-      var req = {
-        method: 'DELETE',
-        path: '/delete',
-      };
-
-      this.rapi.request(req, function(err, res) {
+      this.rapi._delete('/delete', function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -343,14 +334,12 @@ describe('Rapi', function() {
         .patch('/patch', { hello: 'world' })
         .reply(204);
 
-      var req = {
-        method: 'PATCH',
-        path: '/patch',
+      var opts = {
         type: 'json',
         body: { hello: 'world' },
       };
 
-      this.rapi.request(req, function(err, res) {
+      this.rapi._patch('/patch', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -360,13 +349,11 @@ describe('Rapi', function() {
     });
 
     it('should error for unknown type', function(done) {
-      var req = {
-        method: 'PATCH',
-        path: '/patch',
+      var opts = {
         body: { hello: 'world' },
       };
 
-      this.rapi.request(req, function(err, res) {
+      this.rapi._patch('/patch', opts, function(err, res) {
         should.exist(err);
         err.message.should.eql('type required');
 
@@ -377,11 +364,7 @@ describe('Rapi', function() {
     });
 
     it('should require path', function(done) {
-      var req = {
-        method: 'GET',
-      };
-
-      this.rapi.request(req, function(err, res) {
+      this.rapi._request(null, {}, function(err, res) {
         should.exist(err);
         err.message.should.eql('path required');
 
@@ -396,14 +379,12 @@ describe('Rapi', function() {
         .patch('/patch', { hello: 'world' })
         .reply(204);
 
-      var req = {
-        method: 'PATCH',
-        path: '/patch',
+      var opts = {
         headers: { 'content-type': 'application/json' },
         body: { hello: 'world' },
       };
 
-      this.rapi.request(req, function(err, res) {
+      this.rapi._patch('/patch', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -417,12 +398,7 @@ describe('Rapi', function() {
         .post('/post')
         .reply(400);
 
-      var req = {
-        method: 'POST',
-        path: '/post',
-      };
-
-      this.rapi.request(req, function(err, res) {
+      this.rapi._post('/post', function(err, res) {
         should.exist(err);
         err.message.should.eql('Bad Request');
 
@@ -438,12 +414,7 @@ describe('Rapi', function() {
         .post('/post')
         .reply(400, 'Validation error', { 'content-type': 'text/plain' });
 
-      var req = {
-        method: 'POST',
-        path: '/post',
-      };
-
-      this.rapi.request(req, function(err, res) {
+      this.rapi._post('/post', function(err, res) {
         should.exist(err);
         err.message.should.eql('Validation error');
 
@@ -459,12 +430,7 @@ describe('Rapi', function() {
         .post('/post')
         .reply(499);
 
-      var req = {
-        method: 'POST',
-        path: '/post',
-      };
-
-      this.rapi.request(req, function(err, res) {
+      this.rapi._post('/post', function(err, res) {
         should.exist(err);
         err.message.should.eql('Request failed: 499');
 

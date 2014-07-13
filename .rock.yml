@@ -1,5 +1,7 @@
 runtime: node010
 
+run: node example.js
+
 test: |
   if [[ -n "$ROCK_ARGV" ]]; then
     exec mocha --recursive --reporter spec "${ARGV[@]}"
