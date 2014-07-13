@@ -26,8 +26,20 @@ function GitHub(opts) {
   if (!opts.headers['user-agent']) {
     opts.headers['user-agent'] = 'RapiGitHub/0.1.0';
   }
+  if (opts.tags) {
+    opts.tags = ['github'].concat(opts.tags);
+  } else {
+    opts.tags = ['github'];
+  }
+  if (!opts.timeout) {
+    opts.timeout = 60 * 1000;
+  }
 
   Rapi.call(this, opts);
+
+  if (opts.debug) {
+    this.on('log', console.log);
+  }
 }
 
 util.inherits(GitHub, Rapi);
@@ -59,10 +71,12 @@ GitHub.prototype.gists = function(username, callback) {
  */
 
 function main() {
-  var github = new GitHub();
+  var github = new GitHub({ debug: true });
 
   github.gists('silas', function(err, gists) {
     if (err) throw err;
+
+    console.log('----');
 
     gists.forEach(function(gist) {
       if (gist.description) console.log(gist.description);

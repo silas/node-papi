@@ -1,16 +1,16 @@
 {
   "name": "rapi",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Build HTTP API clients",
   "main": "lib",
   "devDependencies": {
-    "debug": "^1.0.2",
-    "jscs": "^1.5.7",
-    "jshint": "^2.5.1",
+    "debug": "^1.0.3",
+    "jscs": "^1.5.8",
+    "jshint": "^2.5.2",
     "mocha": "^1.20.1",
-    "nock": "^0.40.0",
+    "nock": "^0.42.1",
     "should": "^4.0.4",
-    "sinon": "^1.10.2"
+    "sinon": "^1.10.3"
   },
   "scripts": {
     "test": "./node_modules/.bin/jshint lib test && ./node_modules/.bin/jscs lib test && ./node_modules/.bin/mocha --recursive --require should"

@@ -13,6 +13,7 @@ var should = require('should');
 var sinon = require('sinon');
 
 var Rapi = require('../lib').Rapi;
+var utils = require('../lib/utils');
 
 /**
  * Tests
@@ -159,7 +160,7 @@ describe('Rapi', function() {
         baseUrl: this.baseUrl,
         headers: { key: 'value' },
       });
-      this.rapi.on('debug', debug);
+      this.rapi.on('log', debug);
 
       this.nock = nock(this.baseUrl);
     });
@@ -436,6 +437,89 @@ describe('Rapi', function() {
 
         should.exist(res);
         res.statusCode.should.eql(499);
+
+        done();
+      });
+    });
+
+    it('should emit log events', function(done) {
+      this.nock
+        .post('/post', { name: 'world' })
+        .reply(200, { hello: 'world' });
+
+      var events = [];
+
+      this.rapi._opts.tags = ['class'];
+      this.rapi.on('log', function(e) { events.push(e); });
+
+      var opts = {
+        body: { name: 'world' },
+        type: 'json',
+        tags: ['func'],
+      };
+
+      this.rapi._post('/post', opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+
+        events.length.should.eql(4);
+
+        events[0].tags.should.eql([
+          'class',
+          'debug',
+          'options',
+          'request',
+          'func',
+        ]);
+
+        var keys = Object.keys(events[0].data[0]).filter(function(key) {
+          return key !== 'body';
+        });
+
+        utils.pick(events[0].data[0], keys).should.eql({
+          hostname: 'example.org',
+          port: 80,
+          path: '/post',
+          method: 'POST',
+          headers: {
+            key: 'value',
+            'content-length': 16,
+            'content-type': 'application/json; charset=utf-8',
+          },
+          proto: 'http',
+          host: 'example.org:80',
+        });
+
+        events[1].tags.should.eql([
+          'class',
+          'debug',
+          'response',
+          'statusCode',
+          'func',
+        ]);
+        events[1].data[0].should.eql(200);
+
+        events[2].tags.should.eql([
+          'class',
+          'debug',
+          'response',
+          'headers',
+          'func',
+        ]);
+        events[2].data[0].should.eql({
+          'content-type': 'application/json'
+        });
+
+        events[3].tags.should.eql([
+          'class',
+          'body',
+          'debug',
+          'response',
+          'func',
+        ]);
+        events[3].data[0].toString().should.eql('{"hello":"world"}');
+        events[3].data[0].should.be.instanceof(Buffer);
 
         done();
       });
