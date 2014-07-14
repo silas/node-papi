@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-var Rapi = require('./lib').Rapi;
+var rapi = require('./lib');
 var util = require('util');
 
 /**
@@ -35,14 +35,14 @@ function GitHub(opts) {
     opts.timeout = 60 * 1000;
   }
 
-  Rapi.call(this, opts);
+  rapi.Client.call(this, opts);
 
   if (opts.debug) {
     this.on('log', console.log);
   }
 }
 
-util.inherits(GitHub, Rapi);
+util.inherits(GitHub, rapi.Client);
 
 /**
  * Get user gists

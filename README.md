@@ -1,4 +1,4 @@
-# Rapi [![Build Status](https://travis-ci.org/silas/node-rapi.png?branch=master)](https://travis-ci.org/silas/node-rapi)
+# Rapi [![Build Status](https://travis-ci.org/silas/node-client.png?branch=master)](https://travis-ci.org/silas/node-rapi)
 
 This is a module for building HTTP API clients.
 
@@ -8,7 +8,7 @@ This is a module for building HTTP API clients.
 
 ## Documentation
 
-### Rapi([options])
+### rapi.Client([options])
 
 Initialize a new client.
 
@@ -25,16 +25,16 @@ Options
 Usage
 
 ``` javascript
-var Rapi = require('rapi').Rapi;
+var rapi = require('rapi');
 
-var rapi = new Rapi({
+var client = new rapi.Client({
   baseUrl: 'https://api.github.com',
   headers: { 'user-agent': 'RapiGitHub/0.1.0' },
   timeout: 5 * 1000,
 });
 ```
 
-### rapi.\_request(path, options, callback)
+### client.\_request(path, options, callback)
 
 Make an HTTP request.
 
@@ -64,7 +64,7 @@ var opts = {
   path: { username: 'silas' },
 };
 
-rapi._get('/users/{username}/gists', opts, function(err, res) {
+client._get('/users/{username}/gists', opts, function(err, res) {
   if (err) {
     console.log('error', err.message);
   }
@@ -84,7 +84,7 @@ body [ { url: 'https://api.github.com/gists/9458207',
 ...
 ```
 
-### rapi.\_log(tags, [data...])
+### client.\_log(tags, [data...])
 
 Emit log events.
 
@@ -96,9 +96,9 @@ Arguments
 Usage
 
 ``` javascript
-rapi.on('log', console.log);
+client.on('log', console.log);
 
-rapi._log(['github', 'test'], 'one', 'two');
+client._log(['github', 'test'], 'one', 'two');
 ```
 
 Result
@@ -107,7 +107,7 @@ Result
 { data: [ 'one', 'two' ], tags: [ 'github', 'test' ] }
 ```
 
-### rapi.\_before(ctx, next)
+### client.\_before(ctx, next)
 
 Called before request is sent.
 
@@ -119,7 +119,7 @@ Arguments
 Usage
 
 ``` javascript
-rapi._before = function(ctx, next) {
+client._before = function(ctx, next) {
   console.log('path', ctx.path);
   console.log('opts', ctx.opts);
 
@@ -129,7 +129,7 @@ rapi._before = function(ctx, next) {
 };
 ```
 
-### rapi.\_after(ctx, next)
+### client.\_after(ctx, next)
 
 Called after request finishes.
 
@@ -141,7 +141,7 @@ Arguments
 Usage
 
 ``` javascript
-rapi._after = function(ctx, next) {
+client._after = function(ctx, next) {
   console.log('path', ctx.path);
   console.log('elapsed', new Date() - ctx.start);
 
@@ -169,7 +169,7 @@ rapi._after = function(ctx, next) {
  * Module dependencies.
  */
 
-var Rapi = require('rapi').Rapi;
+var rapi = require('rapi');
 var util = require('util');
 
 /**
@@ -200,14 +200,14 @@ function GitHub(opts) {
     opts.timeout = 60 * 1000;
   }
 
-  Rapi.call(this, opts);
+  rapi.Client.call(this, opts);
 
   if (opts.debug) {
     this.on('log', console.log);
   }
 }
 
-util.inherits(GitHub, Rapi);
+util.inherits(GitHub, rapi.Client);
 
 /**
  * Get user gists

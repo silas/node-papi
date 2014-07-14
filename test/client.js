@@ -12,7 +12,7 @@ var nock = require('nock');
 var should = require('should');
 var sinon = require('sinon');
 
-var Rapi = require('../lib').Rapi;
+var rapi = require('../lib');
 var utils = require('../lib/utils');
 
 /**
@@ -26,7 +26,7 @@ var CHARSET = 'charset=utf-8';
  * Tests
  */
 
-describe('Rapi', function() {
+describe('Client', function() {
   describe('request', function() {
     beforeEach(function() {
       var self = this;
@@ -64,9 +64,9 @@ describe('Rapi', function() {
 
       var baseUrl = protocol + '//' + hostname;
 
-      var rapi = new Rapi({ baseUrl: baseUrl, timeout: 1000 });
+      var client = rapi.Client({ baseUrl: baseUrl, timeout: 1000 });
 
-      rapi._get('/one');
+      client._get('/one');
 
       should(this.http).eql({
         hostname: hostname,
@@ -86,9 +86,9 @@ describe('Rapi', function() {
       var baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
                     '/one';
 
-      var rapi = new Rapi({ baseUrl: baseUrl });
+      var client = rapi.Client({ baseUrl: baseUrl });
 
-      rapi._get('/two');
+      client._get('/two');
 
       should(this.http).eql({
         auth: auth,
@@ -107,9 +107,9 @@ describe('Rapi', function() {
 
       var baseUrl = protocol + '//' + hostname;
 
-      var rapi = new Rapi({ baseUrl: baseUrl });
+      var client = rapi.Client({ baseUrl: baseUrl });
 
-      rapi._get('/one');
+      client._get('/one');
 
       should(this.https).eql({
         hostname: hostname,
@@ -129,9 +129,9 @@ describe('Rapi', function() {
       var baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
                     '/one';
 
-      var rapi = new Rapi({ baseUrl: baseUrl });
+      var client = rapi.Client({ baseUrl: baseUrl });
 
-      rapi._get('/two');
+      client._get('/two');
 
       should(this.https).eql({
         auth: auth,
@@ -156,11 +156,11 @@ describe('Rapi', function() {
     beforeEach(function() {
       this.baseUrl = 'http://example.org';
 
-      this.rapi = new Rapi({
+      this.client = rapi.Client({
         baseUrl: this.baseUrl,
         headers: { key: 'value' },
       });
-      this.rapi.on('log', debug);
+      this.client.on('log', debug);
 
       this.nock = nock(this.baseUrl);
     });
@@ -170,7 +170,7 @@ describe('Rapi', function() {
         .get('/get')
         .reply(200, 'ok', { 'content-type': 'text/plain' });
 
-      this.rapi._get('/get', function(err, res) {
+      this.client._get('/get', function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -188,7 +188,7 @@ describe('Rapi', function() {
           { 'content-type': 'application/json' }
         );
 
-      this.rapi._get('/get', function(err, res) {
+      this.client._get('/get', function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -205,7 +205,7 @@ describe('Rapi', function() {
         .get('/get')
         .reply(200, 'ok');
 
-      this.rapi._get('/get', function(err, res) {
+      this.client._get('/get', function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -227,8 +227,9 @@ describe('Rapi', function() {
       var opts = {
         path: { saying: 'hello world', count: 2 },
       };
+      var path = '/{saying}/0/{saying}/{count}/';
 
-      this.rapi._get('/{saying}/0/{saying}/{count}/', opts, function(err, res) {
+      this.client._get(path, opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -247,7 +248,7 @@ describe('Rapi', function() {
         query: { one: 'one', two: ['two1', 'two2'] },
       };
 
-      this.rapi._get('/get', opts, function(err, res) {
+      this.client._get('/get', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -268,7 +269,7 @@ describe('Rapi', function() {
         headers: { myKey: 'myValue' },
       };
 
-      this.rapi._get('/get', opts, function(err, res) {
+      this.client._get('/get', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -287,7 +288,7 @@ describe('Rapi', function() {
         headers: { key: 'value' },
       };
 
-      this.rapi._request('/get', opts, function(err, res) {
+      this.client._request('/get', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -307,7 +308,7 @@ describe('Rapi', function() {
         body: { hello: 'world' },
       };
 
-      this.rapi._post('/post', opts, function(err, res) {
+      this.client._post('/post', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -321,7 +322,7 @@ describe('Rapi', function() {
         .delete('/delete')
         .reply(204);
 
-      this.rapi._delete('/delete', function(err, res) {
+      this.client._delete('/delete', function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -340,7 +341,7 @@ describe('Rapi', function() {
         body: { hello: 'world' },
       };
 
-      this.rapi._patch('/patch', opts, function(err, res) {
+      this.client._patch('/patch', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -354,7 +355,7 @@ describe('Rapi', function() {
         body: { hello: 'world' },
       };
 
-      this.rapi._patch('/patch', opts, function(err, res) {
+      this.client._patch('/patch', opts, function(err, res) {
         should.exist(err);
         err.message.should.eql('type required');
 
@@ -365,7 +366,7 @@ describe('Rapi', function() {
     });
 
     it('should require path', function(done) {
-      this.rapi._request(null, {}, function(err, res) {
+      this.client._request(null, {}, function(err, res) {
         should.exist(err);
         err.message.should.eql('path required');
 
@@ -385,7 +386,7 @@ describe('Rapi', function() {
         body: { hello: 'world' },
       };
 
-      this.rapi._patch('/patch', opts, function(err, res) {
+      this.client._patch('/patch', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -399,7 +400,7 @@ describe('Rapi', function() {
         .post('/post')
         .reply(400);
 
-      this.rapi._post('/post', function(err, res) {
+      this.client._post('/post', function(err, res) {
         should.exist(err);
         err.message.should.eql('Bad Request');
 
@@ -415,7 +416,7 @@ describe('Rapi', function() {
         .post('/post')
         .reply(400, 'Validation error', { 'content-type': 'text/plain' });
 
-      this.rapi._post('/post', function(err, res) {
+      this.client._post('/post', function(err, res) {
         should.exist(err);
         err.message.should.eql('Validation error');
 
@@ -431,7 +432,7 @@ describe('Rapi', function() {
         .post('/post')
         .reply(499);
 
-      this.rapi._post('/post', function(err, res) {
+      this.client._post('/post', function(err, res) {
         should.exist(err);
         err.message.should.eql('Request failed: 499');
 
@@ -449,8 +450,8 @@ describe('Rapi', function() {
 
       var events = [];
 
-      this.rapi._opts.tags = ['class'];
-      this.rapi.on('log', function(e) { events.push(e); });
+      this.client._opts.tags = ['class'];
+      this.client.on('log', function(e) { events.push(e); });
 
       var opts = {
         body: { name: 'world' },
@@ -458,7 +459,7 @@ describe('Rapi', function() {
         tags: ['func'],
       };
 
-      this.rapi._post('/post', opts, function(err, res) {
+      this.client._post('/post', opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -536,7 +537,7 @@ describe('Rapi', function() {
         .get(path)
         .reply(statusCode, { hello: 'world' });
 
-      self.rapi._before = function(ctx, next) {
+      self.client._before = function(ctx, next) {
         ctx.should.have.keys('path', 'opts');
 
         ctx.path.should.eql(path);
@@ -549,7 +550,7 @@ describe('Rapi', function() {
         next();
       };
 
-      self.rapi._after = function(ctx, next) {
+      self.client._after = function(ctx, next) {
         ctx.should.have.keys('args', 'path', 'opts', 'start');
 
         ctx.path.should.eql(path);
@@ -574,7 +575,7 @@ describe('Rapi', function() {
         next();
       };
 
-      self.rapi._get('/get', function(err, res) {
+      self.client._get('/get', function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
