@@ -1,4 +1,4 @@
-# Rapi [![Build Status](https://travis-ci.org/silas/node-client.png?branch=master)](https://travis-ci.org/silas/node-rapi)
+# Rapi [![Build Status](https://travis-ci.org/silas/node-rapi.png?branch=master)](https://travis-ci.org/silas/node-rapi)
 
 This is a module for building HTTP API clients.
 
