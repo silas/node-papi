@@ -8,6 +8,7 @@ var debug = require('debug')('rapi');
 var events = require('events');
 var http = require('http');
 var https = require('https');
+var lodash = require('lodash');
 var nock = require('nock');
 var should = require('should');
 var sinon = require('sinon');
@@ -161,6 +162,23 @@ describe('Client', function() {
         headers: { key: 'value' },
       });
       this.client.on('log', debug);
+
+      var opts;
+      var path;
+
+      this.client._before = function(ctx, next) {
+        opts = lodash.cloneDeep(ctx.opts);
+        path = ctx.path;
+
+        next();
+      };
+
+      this.client._after = function(ctx, next) {
+        opts.should.eql(ctx.opts);
+        path.should.eql(ctx.path);
+
+        next();
+      };
 
       this.nock = nock(this.baseUrl);
     });
@@ -350,7 +368,7 @@ describe('Client', function() {
       });
     });
 
-    it('should error for unknown type', function(done) {
+    it('should error for unknown type @test', function(done) {
       var opts = {
         body: { hello: 'world' },
       };
@@ -551,10 +569,11 @@ describe('Client', function() {
       };
 
       self.client._after = function(ctx, next) {
-        ctx.should.have.keys('args', 'path', 'opts', 'start');
+        ctx.should.have.properties('args', 'path', 'opts', 'start');
 
         ctx.path.should.eql(path);
-        ctx.opts.should.eql({ method: 'GET', headers: { key: 'value' } });
+        ctx.req.method.should.eql('GET');
+        ctx.req.headers.should.eql({ key: 'value' });
 
         ctx.args.length.should.eql(2);
 
