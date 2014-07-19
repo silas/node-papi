@@ -166,24 +166,24 @@ describe('Client', function() {
       var opts;
       var path;
 
-      this.client._before = function(ctx, next) {
+      this.client._ext('onPreCreate', function(ctx, next) {
         opts = lodash.cloneDeep(ctx.opts);
         path = ctx.path;
 
         next();
-      };
+      });
 
-      this.client._after = function(ctx, next) {
+      this.client._ext('onPostExecute', function(ctx, next) {
         opts.should.eql(ctx.opts);
         path.should.eql(ctx.path);
 
         next();
-      };
+      });
 
       this.nock = nock(this.baseUrl);
     });
 
-    it('should GET text/plain', function(done) {
+    it('should GET text/plain @test', function(done) {
       this.nock
         .get('/get')
         .reply(200, 'ok', { 'content-type': 'text/plain' });
@@ -555,7 +555,7 @@ describe('Client', function() {
         .get(path)
         .reply(statusCode, { hello: 'world' });
 
-      self.client._before = function(ctx, next) {
+      self.client._ext('onPreCreate', function(ctx, next) {
         ctx.should.have.keys('path', 'opts');
 
         ctx.path.should.eql(path);
@@ -566,33 +566,28 @@ describe('Client', function() {
         called.push('before');
 
         next();
-      };
+      });
 
-      self.client._after = function(ctx, next) {
-        ctx.should.have.properties('args', 'path', 'opts', 'start');
+      self.client._ext('onPostExecute', function(ctx, next) {
+        ctx.should.have.properties('path', 'opts', 'start');
 
         ctx.path.should.eql(path);
         ctx.req.method.should.eql('GET');
         ctx.req.headers.should.eql({ key: 'value' });
 
-        ctx.args.length.should.eql(2);
+        should.not.exist(ctx.err);
+        should.exist(ctx.res);
 
-        var err = ctx.args[0];
-        var res = ctx.args[1];
+        ctx.res.should.have.properties('statusCode', 'headers', 'body');
 
-        should.not.exist(err);
-        should.exist(res);
-
-        res.should.have.properties('statusCode', 'headers', 'body');
-
-        res.statusCode.should.eql(statusCode);
-        res.headers.should.eql({ 'content-type': 'application/json' });
-        res.body.should.eql({ hello: 'world' });
+        ctx.res.statusCode.should.eql(statusCode);
+        ctx.res.headers.should.eql({ 'content-type': 'application/json' });
+        ctx.res.body.should.eql({ hello: 'world' });
 
         called.push('after');
 
         next();
-      };
+      });
 
       self.client._get('/get', function(err, res) {
         should.not.exist(err);
