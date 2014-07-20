@@ -22,16 +22,69 @@ var utils = require('../lib/utils');
 
 var FORM = 'application/x-www-form-urlencoded';
 var CHARSET = 'charset=utf-8';
-var OPTS = { baseUrl: 'http://example.org' };
 
 /**
  * Tests
  */
 
 describe('Client', function() {
+  describe('err @test', function() {
+    beforeEach(function() {
+      this.client = rapi.Client('http://example.org');
+    });
+
+    it('should return nothing', function() {
+      should.not.exist(this.client.__err());
+    });
+
+    it('should convert string to error', function() {
+      var err = this.client.__err('test');
+
+      should(err).be.instanceof(Error);
+
+      err.message.should.eql('test');
+    });
+
+    it('should not change error', function() {
+      var message = 'ok';
+
+      var err1 = new Error(message);
+      var err2 = this.client.__err(err1);
+
+      should(err2).be.instanceof(Error);
+      err2.should.equal(err1);
+      err2.message.should.eql(message);
+    });
+
+    it('should add client name', function() {
+      this.client._opts.name = 'client';
+
+      var err = this.client.__err('ok');
+
+      err.message.should.eql('client: ok');
+    });
+
+    it('should add opts name', function() {
+      var opts = { name: 'opts' };
+
+      var err = this.client.__err('ok', opts);
+
+      err.message.should.eql('opts: ok');
+    });
+
+    it('should add client and opts name', function() {
+      this.client._opts.name = 'client';
+      var opts = { name: 'opts' };
+
+      var err = this.client.__err('ok', opts);
+
+      err.message.should.eql('client: opts: ok');
+    });
+  });
+
   describe('plugin', function() {
     it('should register', function(done) {
-      var client = rapi.Client(OPTS);
+      var client = rapi.Client('http://example.org');
       var options = {};
 
       var plugin = {};
@@ -206,6 +259,7 @@ describe('Client', function() {
       this.client = rapi.Client({
         baseUrl: this.baseUrl,
         headers: { key: 'value' },
+        name: 'testclient',
       });
       this.client.on('log', debug);
 
@@ -421,7 +475,7 @@ describe('Client', function() {
 
       this.client._patch('/patch', opts, function(err, res) {
         should.exist(err);
-        err.message.should.eql('type required');
+        err.message.should.eql('testclient: type required');
 
         should.not.exist(res);
 
@@ -432,7 +486,7 @@ describe('Client', function() {
     it('should require path', function(done) {
       this.client._request(null, {}, function(err, res) {
         should.exist(err);
-        err.message.should.eql('path required');
+        err.message.should.eql('testclient: path required');
 
         should.not.exist(res);
 
@@ -466,7 +520,7 @@ describe('Client', function() {
 
       this.client._post('/post', function(err, res) {
         should.exist(err);
-        err.message.should.eql('Bad Request');
+        err.message.should.eql('testclient: bad request');
 
         should.exist(res);
         res.statusCode.should.eql(400);
@@ -478,11 +532,11 @@ describe('Client', function() {
     it('should set err.message to body text', function(done) {
       this.nock
         .post('/post')
-        .reply(400, 'Validation error', { 'content-type': 'text/plain' });
+        .reply(400, 'validation error', { 'content-type': 'text/plain' });
 
       this.client._post('/post', function(err, res) {
         should.exist(err);
-        err.message.should.eql('Validation error');
+        err.message.should.eql('testclient: validation error');
 
         should.exist(res);
         res.statusCode.should.eql(400);
@@ -498,7 +552,7 @@ describe('Client', function() {
 
       this.client._post('/post', function(err, res) {
         should.exist(err);
-        err.message.should.eql('Request failed: 499');
+        err.message.should.eql('testclient: request failed: 499');
 
         should.exist(res);
         res.statusCode.should.eql(499);
@@ -684,6 +738,30 @@ describe('Client', function() {
       });
 
       self.client._get('/get', callback).should.eql('custom');
+    });
+
+    it('should call validate', function(done) {
+      var opts = {
+        name: 'testvalidate',
+        path: { hello: 'world' },
+      };
+
+      opts.validate = function() {
+        this.should.have.keys('path', 'opts');
+
+        this.path.should.eql('/get');
+        this.opts.path.should.eql({ hello: 'world' });
+
+        throw new Error('hello world');
+      };
+
+      this.client._get('/get', opts, function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: testvalidate: hello world');
+
+        done();
+      });
     });
   });
 });

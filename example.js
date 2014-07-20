@@ -50,7 +50,14 @@ util.inherits(GitHub, rapi.Client);
 
 GitHub.prototype.gists = function(username, callback) {
   var opts = {
+    name: 'gists',
     path: { username: username },
+  };
+
+  opts.validate = function() {
+    if (!username || typeof username !== 'string') {
+      throw new Error('username required');
+    }
   };
 
   this._get('/users/{username}/gists', opts, function(err, res) {

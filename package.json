@@ -1,6 +1,6 @@
 {
   "name": "rapi",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Build HTTP API clients",
   "main": "lib",
   "devDependencies": {
