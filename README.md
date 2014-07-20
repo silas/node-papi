@@ -15,10 +15,10 @@ Initialize a new client.
 Options
 
  * baseUrl (String): base URL, should not include trailing slash
- * headers (Object<<String, String>>, optional): headers to include in every request
+ * headers (Object&lt;String, String&gt;, optional): headers to include in every request
  * type (String, optional, supports: form, json, text): default request body encoding type
- * encoders (Object<<String, Function>>, optional): an object that maps a mime type to a function. The function should accept an object and return a Buffer.
- * decoders (Object<<String, Function>>, optional): an object that maps a mime type to a function. The function should accept a Buffer or String (must support both) and return an object.
+ * encoders (Object&lt;String, Function&gt;, optional): an object that maps a mime type to a function. The function should accept an object and return a Buffer.
+ * decoders (Object&lt;String, Function&gt;, optional): an object that maps a mime type to a function. The function should accept a Buffer or String (must support both) and return an object.
  * tags (String[], optional): tags included in `_log` calls
  * timeout (Number, optional): default number of milliseconds before request is aborted
 
@@ -41,14 +41,14 @@ Make an HTTP request.
 Arguments
 
  * path (String): HTTP path, can include variable segments defined by curly braces (ex: `/user/{id}`)
- * callback (Function<<err, res>>): request callback function
+ * callback (Function&lt;err, res&gt;): request callback function
 
 Options
 
  * method (String): HTTP method
- * headers (Object<<String, String>>, optional): HTTP headers to include in request
- * path (Object<<String, String>>, optional): replaces variables in request path
- * query (Object<<String, String|String[]>>, optional): HTTP query parameters
+ * headers (Object&lt;String, String&gt;, optional): HTTP headers to include in request
+ * path (Object&lt;String, String&gt;, optional): replaces variables in request path
+ * query (Object&lt;String, String|String[]&gt;, optional): HTTP query parameters
  * body (Object, optional): request body
  * type (String, optional, supports: form, json, text): request body encoding type
  * timeout (Number, optional): number of milliseconds before request is aborted
