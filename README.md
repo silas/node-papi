@@ -15,7 +15,7 @@ Initialize a new client.
 Options
 
  * baseUrl (String): base URL, should not include trailing slash
- * headers (Object&lt;String, String&gt;, optional): headers to include in every request
+ * headers (Object&lt;String, String&gt;, optional): defaults headers to include in every request
  * type (String, optional, supports: form, json, text): default request body encoding type
  * encoders (Object&lt;String, Function&gt;, optional): an object that maps a mime type to a function. The function should accept an object and return a Buffer.
  * decoders (Object&lt;String, Function&gt;, optional): an object that maps a mime type to a function. The function should accept a Buffer or String (must support both) and return an object.
