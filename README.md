@@ -41,20 +41,21 @@ Make an HTTP request.
 Arguments
 
  * request (Object): request options
- * callback (Function&lt;err, res&gt;): request callback function
+ * callback (Function&lt;err, res&gt;): request callback function. You should not assume a callback exists when creating client libraries (this allows for promise and generator based interfaces). Use `format` to modify results.
 
 Request
 
- * path (String): HTTP path, can include variable segments defined by curly braces (ex: `/user/{id}`)
- * method (String): HTTP method
- * headers (Object&lt;String, String&gt;, optional): HTTP headers to include in request
- * params (Object&lt;String, String&gt;, optional): replaces variables in request path
- * query (Object&lt;String, String|String[]&gt;, optional): HTTP query parameters
- * body (Object, optional): request body
+ * path (String): request path, can include variable segments defined by curly braces (ex: `/user/{id}`)
+ * method (String): request method
+ * headers (Object&lt;String, String&gt;, optional): request headers
+ * params (Object&lt;String, String&gt;, optional): sets variables in request path
+ * query (Object&lt;String, String|String[]&gt;, optional): query parameters
+ * body (Object|Buffer|String, optional): request body
  * type (String, optional, supports: form, json, text): request body encoding type
  * timeout (Number, optional): number of milliseconds before request is aborted
  * tags (String[], optional): tags included in `_log` calls
  * options (Function, optional): a method that can do validation and set options (`request` binded to `this`)
+ * format (Function|Function[], optional): a method pipeline that accepts an array of arguments and returns an array of arguments. This can be used to transform the callback response.
 
 There are also `_get`, `_head`, `_post`, `_put`, `_delete`, `_patch`, and
 `_options` shortcuts with the same method signature as `_request`.
@@ -94,20 +95,25 @@ Emit log events.
 Arguments
 
  * tags (String[]): tags associated with event
- * data (optional): remaining arguments are added to data attribute
+ * data (optional): remaining arguments
 
 Usage
 
 ``` javascript
-client.on('log', console.log);
+client.on('log', function(tags) {
+  console.log({
+    tags: tags,
+    data: Array.prototype.slice.call(arguments, 1),
+  });
+});;
 
-client._log(['github', 'test'], 'one', 'two');
+client._log(['debug', 'github', 'gist'], 'silas');
 ```
 
 Result
 
 ```
-{ data: [ 'one', 'two' ], tags: [ 'github', 'test' ] }
+{ data: [ 'silas' ], tags: [ 'debug', 'github', 'gist' ] }
 ```
 
 ### client.\_ext(event, method)
@@ -147,13 +153,13 @@ request GET /users/{username}/gists
 response GET /users/{username}/gists 200 1141ms
 ```
 
-### client.\_plugin(module, options)
+### client.\_plugin(plugin, options)
 
 Register a plugin.
 
 Arguments
 
- * module (Object): plugin module
+ * plugin (Object): plugin module
  * options (Object, optional): plugin options
 
 Usage
@@ -219,19 +225,25 @@ GitHub.prototype.gists = function(username, callback) {
   var opts = {
     path: '/users/{username}/gists',
     params: { username: username },
+    format: [
+      function(args) {
+        var err = args[0];
+        var res = args[1];
+
+        if (err) {
+          if (res && res.statusCode === 404) {
+            err.message = 'User "' + username + '" not found';
+          }
+
+          return [err];
+        }
+
+        return [null, res.body];
+      },
+    ],
   };
 
-  return this._get(opts, function(err, res) {
-    if (err) {
-      if (res && res.statusCode === 404) {
-        err.message = 'User "' + username + '" not found';
-      }
-
-      return callback(err);
-    }
-
-    callback(null, res.body);
-  });
+  return this._get(opts, callback);
 };
 
 /**
