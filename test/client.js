@@ -721,20 +721,20 @@ describe('Client', function() {
       self.client._get(path, callback).should.eql('custom');
     });
 
-    it('should call setup', function(done) {
+    it('should call options', function(done) {
       var opts = {
         path: '/get',
-        name: 'testsetup',
+        name: 'testoptions',
         params: { hello: 'world' },
       };
 
-      opts.setup = function() {
+      opts.options = function() {
         this.should.have.keys(
           'method',
           'name',
           'params',
           'path',
-          'setup'
+          'options'
         );
 
         this.path.should.eql('/get');
@@ -746,7 +746,7 @@ describe('Client', function() {
       this.client._get(opts, function(err) {
         should.exist(err);
 
-        err.message.should.eql('testclient: testsetup: hello world');
+        err.message.should.eql('testclient: testoptions: hello world');
 
         done();
       });
