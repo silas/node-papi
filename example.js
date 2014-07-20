@@ -38,7 +38,10 @@ function GitHub(opts) {
   rapi.Client.call(this, opts);
 
   if (opts.debug) {
-    this.on('log', console.log);
+    this.on('log', function(tags, data) {
+      if (~tags.indexOf('body')) return;
+      console.log(tags.slice(1).join(':'), data);
+    });
   }
 }
 

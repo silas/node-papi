@@ -14,7 +14,6 @@ var should = require('should');
 var sinon = require('sinon');
 
 var rapi = require('../lib');
-var utils = require('../lib/utils');
 
 /**
  * Tests
@@ -569,12 +568,14 @@ describe('Client', function() {
       var events = [];
 
       this.client._opts.tags = ['class'];
-      this.client.on('log', function(e) { events.push(e); });
+      this.client.on('log', function() {
+        events.push(Array.prototype.slice.call(arguments));
+      });
 
       var opts = {
         body: { name: 'world' },
         type: 'json',
-        tags: ['func'],
+        tags: ['test'],
       };
 
       this.client._post('/post', opts, function(err, res) {
@@ -582,63 +583,32 @@ describe('Client', function() {
 
         should.exist(res);
 
-        events.length.should.eql(4);
+        events.length.should.eql(2);
 
-        events[0].tags.should.eql([
-          'class',
-          'debug',
-          'options',
-          'request',
-          'func',
-        ]);
-
-        var keys = Object.keys(events[0].data[0]).filter(function(key) {
-          return key !== 'body';
-        });
-
-        utils.pick(events[0].data[0], keys).should.eql({
+        events[0][0].should.eql(['debug', 'request', 'test']);
+        events[0][1].should.eql({
           hostname: 'example.org',
           port: 80,
           path: '/post',
           method: 'POST',
           headers: {
             key: 'value',
-            'content-length': 16,
             'content-type': 'application/json; charset=utf-8',
+            'content-length': 16,
           },
           proto: 'http',
           host: 'example.org:80',
         });
 
-        events[1].tags.should.eql([
-          'class',
-          'debug',
-          'response',
-          'statusCode',
-          'func',
-        ]);
-        events[1].data[0].should.eql(200);
-
-        events[2].tags.should.eql([
-          'class',
-          'debug',
-          'response',
-          'headers',
-          'func',
-        ]);
-        events[2].data[0].should.eql({
-          'content-type': 'application/json'
+        events[1][0].should.eql(['debug', 'response', 'test']);
+        events[1][1].should.eql({
+          statusCode: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+          remoteAddress: undefined,
+          remotePort: undefined,
         });
-
-        events[3].tags.should.eql([
-          'class',
-          'body',
-          'debug',
-          'response',
-          'func',
-        ]);
-        events[3].data[0].toString().should.eql('{"hello":"world"}');
-        events[3].data[0].should.be.instanceof(Buffer);
 
         done();
       });
@@ -656,7 +626,7 @@ describe('Client', function() {
         .reply(statusCode, { hello: 'world' });
 
       self.client._ext('onCreate', function(ctx, next) {
-        ctx.should.have.keys('path', 'opts');
+        ctx.should.have.keys('path', 'opts', 'retry');
 
         ctx.path.should.eql(path);
         ctx.opts.should.eql({ method: 'GET' });
@@ -759,6 +729,35 @@ describe('Client', function() {
         should.exist(err);
 
         err.message.should.eql('testclient: testvalidate: hello world');
+
+        done();
+      });
+    });
+
+    it('should support retry', function(done) {
+      this.nock
+        .get('/retry')
+        .reply(500, 'error1')
+        .get('/retry')
+        .reply(503, 'error2')
+        .get('/retry')
+        .reply(200, { hello: 'world' });
+
+      var responses = [];
+
+      this.client._ext('onResponse', function(ctx, next) {
+        responses.push(ctx.res.statusCode);
+
+        if (Math.floor(ctx.res.statusCode / 100) !== 5) return next();
+
+        ctx.retry();
+      });
+
+      this.client._get('/retry', function(err, res) {
+        should.not.exist(err);
+        should.exist(res);
+
+        responses.should.eql([500, 503, 200]);
 
         done();
       });
