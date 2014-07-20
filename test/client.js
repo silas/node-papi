@@ -188,14 +188,14 @@ describe('Client', function() {
       var opts;
       var path;
 
-      this.client._ext('onPreCreate', function(ctx, next) {
+      this.client._ext('onCreate', function(ctx, next) {
         opts = lodash.cloneDeep(ctx.opts);
         path = ctx.path;
 
         next();
       });
 
-      this.client._ext('onPostExecute', function(ctx, next) {
+      this.client._ext('onResponse', function(ctx, next) {
         opts.should.eql(ctx.opts);
         path.should.eql(ctx.path);
 
@@ -566,7 +566,7 @@ describe('Client', function() {
       });
     });
 
-    it('should call before and after', function(done) {
+    it('should call request extensions', function(done) {
       var self = this;
 
       var called = [];
@@ -577,7 +577,7 @@ describe('Client', function() {
         .get(path)
         .reply(statusCode, { hello: 'world' });
 
-      self.client._ext('onPreCreate', function(ctx, next) {
+      self.client._ext('onCreate', function(ctx, next) {
         ctx.should.have.keys('path', 'opts');
 
         ctx.path.should.eql(path);
@@ -585,12 +585,18 @@ describe('Client', function() {
 
         ctx.start = new Date();
 
-        called.push('before');
+        called.push('onCreate');
 
         next();
       });
 
-      self.client._ext('onPostExecute', function(ctx, next) {
+      self.client._ext('onRequest', function(ctx, next) {
+        called.push('onRequest');
+
+        next();
+      });
+
+      self.client._ext('onResponse', function(ctx, next) {
         ctx.should.have.properties('path', 'opts', 'start');
 
         ctx.path.should.eql(path);
@@ -606,7 +612,7 @@ describe('Client', function() {
         ctx.res.headers.should.eql({ 'content-type': 'application/json' });
         ctx.res.body.should.eql({ hello: 'world' });
 
-        called.push('after');
+        called.push('onResponse');
 
         next();
       });
@@ -616,7 +622,7 @@ describe('Client', function() {
 
         should.exist(res);
 
-        called.should.eql(['before', 'after']);
+        called.should.eql(['onCreate', 'onRequest', 'onResponse']);
 
         done();
       });

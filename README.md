@@ -119,19 +119,29 @@ Arguments
 Usage
 
 ``` javascript
-client._ext('onPreExecute', function(ctx, next) {
-  console.log('start', ctx.opts.method + ' ' + ctx.path);
+client._ext('onRequest', function(ctx, next) {
+  console.log('request', ctx.opts.method + ' ' + ctx.path);
 
   ctx.start = new Date();
 
   next();
 });
 
-client._ext('onPostExecute', function(ctx, next) {
-  console.log('end', ctx.opts.method + ' ' + ctx.path, new Date() - ctx.start);
+client._ext('onResponse', function(ctx, next) {
+  var duration = new Date() - ctx.start;
+  var statusCode = ctx.res ? ctx.res.statusCode : 'none';
+
+  console.log('response', ctx.opts.method, ctx.path, statusCode, duration + 'ms');
 
   next();
 });
+```
+
+Result
+
+```
+request GET /users/{username}/gists
+response GET /users/{username}/gists 200 1141ms
 ```
 
 ## Example
