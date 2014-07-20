@@ -641,6 +641,9 @@ describe('Client', function() {
         ctx.should.have.keys('opts', 'retry');
 
         ctx.opts.should.eql({
+          headers: {},
+          query: {},
+          params: {},
           path: path,
           method: 'GET',
         });
@@ -662,6 +665,9 @@ describe('Client', function() {
         ctx.should.have.properties('opts', 'start');
 
         ctx.opts.should.eql({
+          headers: {},
+          query: {},
+          params: {},
           path: path,
           method: 'GET',
         });
@@ -740,6 +746,8 @@ describe('Client', function() {
           'method',
           'name',
           'params',
+          'query',
+          'headers',
           'path',
           'options'
         );
