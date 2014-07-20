@@ -34,26 +34,27 @@ var client = new rapi.Client({
 });
 ```
 
-### client.\_request(path, options, callback)
+### client.\_request(options, callback)
 
 Make an HTTP request.
 
 Arguments
 
- * path (String): HTTP path, can include variable segments defined by curly braces (ex: `/user/{id}`)
+ * options (Object): request options
  * callback (Function&lt;err, res&gt;): request callback function
 
 Options
 
+ * path (String): HTTP path, can include variable segments defined by curly braces (ex: `/user/{id}`)
  * method (String): HTTP method
  * headers (Object&lt;String, String&gt;, optional): HTTP headers to include in request
- * path (Object&lt;String, String&gt;, optional): replaces variables in request path
+ * params (Object&lt;String, String&gt;, optional): replaces variables in request path
  * query (Object&lt;String, String|String[]&gt;, optional): HTTP query parameters
  * body (Object, optional): request body
  * type (String, optional, supports: form, json, text): request body encoding type
  * timeout (Number, optional): number of milliseconds before request is aborted
  * tags (String[], optional): tags included in `_log` calls
- * validate (Function, optional): method to validate options
+ * setup (Function, optional): a method that can do validation and set options (binded to `this`)
 
 There are also `_get`, `_head`, `_post`, `_put`, `_delete`, `_patch`, and
 `_options` shortcuts with the same method signature as `_request`.
