@@ -635,7 +635,7 @@ describe('Client', function() {
         .reply(statusCode, { hello: 'world' });
 
       self.client._ext('onCreate', function(ctx, next) {
-        ctx.should.have.keys('opts', 'retry');
+        ctx.should.have.keys('opts', 'state', 'retry');
 
         ctx.opts.should.eql({
           headers: {},
