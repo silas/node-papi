@@ -22,13 +22,32 @@ var utils = require('../lib/utils');
 
 var FORM = 'application/x-www-form-urlencoded';
 var CHARSET = 'charset=utf-8';
+var OPTS = { baseUrl: 'http://example.org' };
 
 /**
  * Tests
  */
 
 describe('Client', function() {
-  describe('request', function() {
+  describe('plugin', function() {
+    it('should register', function(done) {
+      var client = rapi.Client(OPTS);
+      var options = {};
+
+      var plugin = {};
+
+      plugin.register = function(pluginClient, pluginOptions) {
+        pluginClient.should.equal(client);
+        pluginOptions.should.equal(options);
+
+        done();
+      };
+
+      client._plugin(plugin, options);
+    });
+  });
+
+  describe('http', function() {
     beforeEach(function() {
       var self = this;
 

@@ -144,6 +144,23 @@ request GET /users/{username}/gists
 response GET /users/{username}/gists 200 1141ms
 ```
 
+### client.\_plugin(module, options)
+
+Register a plugin.
+
+Arguments
+
+ * module (Object): plugin module
+ * options (Object, optional): plugin options
+
+Usage
+
+``` javascript
+client._plugin(require('rapi-promise'), {
+  promise: require('bluebird'),
+});
+```
+
 ## Example
 
 ``` javascript
