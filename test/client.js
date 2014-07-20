@@ -151,6 +151,8 @@ describe('Client', function() {
 
       process.nextTick(function() {
         should(self.http).eql({
+          auth: null,
+          headers: {},
           hostname: hostname,
           method: method,
           path: '/one',
@@ -178,6 +180,7 @@ describe('Client', function() {
       process.nextTick(function() {
         should(self.http).eql({
           auth: auth,
+          headers: {},
           hostname: hostname,
           method: method,
           path: '/one/two',
@@ -203,6 +206,8 @@ describe('Client', function() {
 
       process.nextTick(function() {
         should(self.https).eql({
+          auth: null,
+          headers: {},
           hostname: hostname,
           method: method,
           path: '/one',
@@ -232,6 +237,7 @@ describe('Client', function() {
       process.nextTick(function() {
         should(self.https).eql({
           auth: auth,
+          headers: {},
           hostname: hostname,
           method: method,
           path: '/one/two',
@@ -592,6 +598,7 @@ describe('Client', function() {
 
         events[0][0].should.eql(['debug', 'request', 'test']);
         events[0][1].should.eql({
+          auth: null,
           hostname: 'example.org',
           port: 80,
           path: '/post',
