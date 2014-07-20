@@ -15,10 +15,10 @@ Initialize a new client.
 Options
 
  * baseUrl (String): base URL, should not include trailing slash
- * headers (Object\<String, String>, optional): headers to include in every request
+ * headers (Object<<String, String>>, optional): headers to include in every request
  * type (String, optional, supports: form, json, text): default request body encoding type
- * encoders (Object\<String, Function>, optional): an object that maps a mime type to a function. The function should accept an object and return a Buffer.
- * decoders (Object\<String, Function>, optional): an object that maps a mime type to a function. The function should accept a Buffer or String (must support both) and return an object.
+ * encoders (Object<<String, Function>>, optional): an object that maps a mime type to a function. The function should accept an object and return a Buffer.
+ * decoders (Object<<String, Function>>, optional): an object that maps a mime type to a function. The function should accept a Buffer or String (must support both) and return an object.
  * tags (String[], optional): tags included in `_log` calls
  * timeout (Number, optional): default number of milliseconds before request is aborted
 
@@ -41,14 +41,14 @@ Make an HTTP request.
 Arguments
 
  * path (String): HTTP path, can include variable segments defined by curly braces (ex: `/user/{id}`)
- * callback (Function\<err, res>): request callback function
+ * callback (Function<<err, res>>): request callback function
 
 Options
 
  * method (String): HTTP method
- * headers (Object\<String, String>, optional): HTTP headers to include in request
- * path (Object\<String, String>, optional): replaces variables in request path
- * query (Object\<String, String|String[]>, optional): HTTP query parameters
+ * headers (Object<<String, String>>, optional): HTTP headers to include in request
+ * path (Object<<String, String>>, optional): replaces variables in request path
+ * query (Object<<String, String|String[]>>, optional): HTTP query parameters
  * body (Object, optional): request body
  * type (String, optional, supports: form, json, text): request body encoding type
  * timeout (Number, optional): number of milliseconds before request is aborted
@@ -107,57 +107,31 @@ Result
 { data: [ 'one', 'two' ], tags: [ 'github', 'test' ] }
 ```
 
-### client.\_before(ctx, next)
+### client.\_ext(event, method)
 
-Called before request is sent.
+Register an extension function.
 
 Arguments
 
- * ctx (Object): object containing `path` and `opts`.
- * next (Function): continue processing request
+ * event (String): event name
+ * method (Function): function to execute at a specified point during the request
 
 Usage
 
 ``` javascript
-client._before = function(ctx, next) {
-  console.log('path', ctx.path);
-  console.log('opts', ctx.opts);
+client._ext('onPreExecute', function(ctx, next) {
+  console.log('start', ctx.opts.method + ' ' + ctx.path);
 
   ctx.start = new Date();
 
   next();
-};
-```
+});
 
-### client.\_after(ctx, next)
-
-Called after request finishes.
-
-Arguments
-
- * ctx (Object): object containing `path`, `opts`, and `args`.
- * next (Function): continue processing request
-
-Usage
-
-``` javascript
-client._after = function(ctx, next) {
-  console.log('path', ctx.path);
-  console.log('elapsed', new Date() - ctx.start);
-
-  var err = opts.args[0];
-  var res = opts.args[1];
-
-  if (err) {
-    console.log('error', err.message);
-  }
-
-  if (res) {
-    console.log('response', res.statusCode);
-  }
+client._ext('onPostExecute', function(ctx, next) {
+  console.log('end', ctx.opts.method + ' ' + ctx.path, new Date() - ctx.start);
 
   next();
-};
+});
 ```
 
 ## Example
