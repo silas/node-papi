@@ -63,10 +63,11 @@ Usage
 
 ``` javascript
 var opts = {
-  path: { username: 'silas' },
+  path: '/users/{username}/gists',
+  params: { username: 'silas' },
 };
 
-client._get('/users/{username}/gists', opts, function(err, res) {
+client._get(opts, function(err, res) {
   if (err) {
     console.log('error', err.message);
   }
@@ -122,7 +123,7 @@ Usage
 
 ``` javascript
 client._ext('onRequest', function(ctx, next) {
-  console.log('request', ctx.opts.method + ' ' + ctx.path);
+  console.log('request', ctx.opts.method + ' ' + ctx.opts.path);
 
   ctx.start = new Date();
 
@@ -133,7 +134,7 @@ client._ext('onResponse', function(ctx, next) {
   var duration = new Date() - ctx.start;
   var statusCode = ctx.res ? ctx.res.statusCode : 'none';
 
-  console.log('response', ctx.opts.method, ctx.path, statusCode, duration + 'ms');
+  console.log('response', ctx.opts.method, ctx.opts.path, statusCode, duration + 'ms');
 
   next();
 });
@@ -216,10 +217,11 @@ util.inherits(GitHub, rapi.Client);
 
 GitHub.prototype.gists = function(username, callback) {
   var opts = {
-    path: { username: username },
+    path: '/users/{username}/gists',
+    params: { username: username },
   };
 
-  this._get('/users/{username}/gists', opts, function(err, res) {
+  return this._get(opts, function(err, res) {
     if (err) {
       if (res && res.statusCode === 404) {
         err.message = 'User "' + username + '" not found';

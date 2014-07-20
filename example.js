@@ -38,10 +38,7 @@ function GitHub(opts) {
   rapi.Client.call(this, opts);
 
   if (opts.debug) {
-    this.on('log', function(tags, data) {
-      if (~tags.indexOf('body')) return;
-      console.log(tags.slice(1).join(':'), data);
-    });
+    this.on('log', console.log);
   }
 }
 
@@ -53,17 +50,11 @@ util.inherits(GitHub, rapi.Client);
 
 GitHub.prototype.gists = function(username, callback) {
   var opts = {
-    name: 'gists',
-    path: { username: username },
+    path: '/users/{username}/gists',
+    params: { username: username },
   };
 
-  opts.validate = function() {
-    if (!username || typeof username !== 'string') {
-      throw new Error('username required');
-    }
-  };
-
-  this._get('/users/{username}/gists', opts, function(err, res) {
+  return this._get(opts, function(err, res) {
     if (err) {
       if (res && res.statusCode === 404) {
         err.message = 'User "' + username + '" not found';
