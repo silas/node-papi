@@ -164,8 +164,6 @@ client._plugin(require('rapi-promise'), {
 ## Example
 
 ``` javascript
-'use strict';
-
 /**
  * Module dependencies.
  */
