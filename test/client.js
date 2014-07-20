@@ -43,6 +43,11 @@ describe('Client', function() {
         done();
       };
 
+      plugin.register.attributes = {
+        name: 'test',
+        version: '0.0.0',
+      };
+
       client._plugin(plugin, options);
     });
   });
