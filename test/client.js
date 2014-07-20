@@ -38,6 +38,8 @@ describe('Client', function() {
         return function(opts) {
           var req = new events.EventEmitter();
 
+          req.abort = function() {};
+
           req.setTimeout = function(timeout) {
             self.timeout = timeout;
           };
@@ -59,6 +61,8 @@ describe('Client', function() {
     });
 
     it('should handle http', function() {
+      var self = this;
+
       var protocol = 'http:';
       var hostname = 'example.org';
       var method = 'GET';
@@ -69,15 +73,19 @@ describe('Client', function() {
 
       client._get('/one');
 
-      should(this.http).eql({
-        hostname: hostname,
-        method: method,
-        path: '/one',
-        port: 80,
+      process.nextTick(function() {
+        should(self.http).eql({
+          hostname: hostname,
+          method: method,
+          path: '/one',
+          port: 80,
+        });
       });
     });
 
-    it('should handle http explicit', function() {
+    it('should handle http explicit', function(done) {
+      var self = this;
+
       var protocol = 'http:';
       var auth = 'user:pass';
       var port = 8000;
@@ -91,17 +99,22 @@ describe('Client', function() {
 
       client._get('/two');
 
-      should(this.http).eql({
-        auth: auth,
-        hostname: hostname,
-        method: method,
-        path: '/one/two',
-        port: port,
-      });
+      process.nextTick(function() {
+        should(self.http).eql({
+          auth: auth,
+          hostname: hostname,
+          method: method,
+          path: '/one/two',
+          port: port,
+        });
 
+        done();
+      });
     });
 
-    it('should handle https', function() {
+    it('should handle https', function(done) {
+      var self = this;
+
       var protocol = 'https:';
       var hostname = 'example.org';
       var method = 'GET';
@@ -112,15 +125,21 @@ describe('Client', function() {
 
       client._get('/one');
 
-      should(this.https).eql({
-        hostname: hostname,
-        method: method,
-        path: '/one',
-        port: 443,
+      process.nextTick(function() {
+        should(self.https).eql({
+          hostname: hostname,
+          method: method,
+          path: '/one',
+          port: 443,
+        });
+
+        done();
       });
     });
 
-    it('should handle https explicit', function() {
+    it('should handle https explicit', function(done) {
+      var self = this;
+
       var protocol = 'https:';
       var auth = 'user:pass';
       var port = 4433;
@@ -134,14 +153,17 @@ describe('Client', function() {
 
       client._get('/two');
 
-      should(this.https).eql({
-        auth: auth,
-        hostname: hostname,
-        method: method,
-        path: '/one/two',
-        port: port,
-      });
+      process.nextTick(function() {
+        should(self.https).eql({
+          auth: auth,
+          hostname: hostname,
+          method: method,
+          path: '/one/two',
+          port: port,
+        });
 
+        done();
+      });
     });
   });
 
@@ -183,7 +205,7 @@ describe('Client', function() {
       this.nock = nock(this.baseUrl);
     });
 
-    it('should GET text/plain @test', function(done) {
+    it('should GET text/plain', function(done) {
       this.nock
         .get('/get')
         .reply(200, 'ok', { 'content-type': 'text/plain' });
@@ -368,7 +390,7 @@ describe('Client', function() {
       });
     });
 
-    it('should error for unknown type @test', function(done) {
+    it('should error for unknown type', function(done) {
       var opts = {
         body: { hello: 'world' },
       };
@@ -598,6 +620,40 @@ describe('Client', function() {
 
         done();
       });
+    });
+
+    it('should allow user to set return value', function(done) {
+      var self = this;
+
+      var path = '/get';
+      var statusCode = 200;
+
+      self.nock
+        .get(path)
+        .reply(statusCode, { hello: 'world' });
+
+      var callback = function() {};
+
+      self.client._ext('onReturn', function(ctx, result) {
+        if (result) {
+          throw new Error('onReturn already registered');
+        }
+
+        ctx.should.have.properties('path', 'opts', 'callback');
+
+        ctx.callback.should.equal(callback);
+
+        ctx.callback = function(err, res) {
+          should.not.exist(err);
+          should.exist(res);
+
+          done();
+        };
+
+        return 'custom';
+      });
+
+      self.client._get('/get', callback).should.eql('custom');
     });
   });
 });
