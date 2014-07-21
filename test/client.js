@@ -298,6 +298,21 @@ describe('Client', function() {
       });
     });
 
+    it('should GET text/html', function(done) {
+      this.nock
+        .get('/get')
+        .reply(200, 'ok', { 'content-type': 'text/html' });
+
+      this.client._get('/get', function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+        should(res.body).eql('ok');
+
+        done();
+      });
+    });
+
     it('should GET application/json', function(done) {
       this.nock
         .get('/get')
@@ -788,6 +803,36 @@ describe('Client', function() {
         should.exist(res);
 
         responses.should.eql([500, 503, 200]);
+
+        done();
+      });
+    });
+
+    it('should format response', function(done) {
+      this.nock
+        .get('/get')
+        .reply(404, 'ok');
+
+      var opts = {
+        path: '/get',
+        format: [
+          function(args) {
+            var res = args[1];
+
+            if (res && res.statusCode === 404) {
+              res.body = undefined;
+
+              args.set(null, res);
+            }
+          },
+        ],
+      };
+
+      this.client._get(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+        should(res.body).equal(undefined);
 
         done();
       });
