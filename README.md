@@ -55,7 +55,7 @@ Request
  * timeout (Number, optional): number of milliseconds before request is aborted
  * tags (String[], optional): tags included in `_log` calls
  * options (Function, optional): a method that can do validation and set options (`request` binded to `this`)
- * format (Function|Function[], optional): a method pipeline that accepts an array of arguments and returns an array of arguments. This can be used to transform the callback response.
+ * format (Function|Function[], optional): a method pipeline that accepts an array of arguments which can be modified in place. Functions can return a truthy value to stop processing the pipeline. This can be used to transform the callback response.
 
 There are also `_get`, `_head`, `_post`, `_put`, `_delete`, `_patch`, and
 `_options` shortcuts with the same method signature as `_request`.
