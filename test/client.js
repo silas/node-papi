@@ -650,7 +650,15 @@ describe('Client', function() {
         .reply(statusCode, { hello: 'world' });
 
       self.client._ext('onCreate', function(ctx, next) {
-        ctx.should.have.keys('opts', 'state', 'retry');
+        ctx.should.have.keys(
+          'args',
+          'callback',
+          'client',
+          'opts',
+          'retry',
+          'stack',
+          'state'
+        );
 
         ctx.opts.should.eql({
           headers: {},
@@ -808,27 +816,21 @@ describe('Client', function() {
       });
     });
 
-    it('should format response', function(done) {
+    it('should execute all handlers', function(done) {
       this.nock
         .get('/get')
         .reply(404, 'ok');
 
-      var opts = {
-        path: '/get',
-        format: [
-          function(args) {
-            var res = args[1];
+      function handleNotFound(ctx, next) {
+        if (ctx.res && ctx.res.statusCode === 404) {
+          ctx.res.body = undefined;
+          delete ctx.err;
+        }
 
-            if (res && res.statusCode === 404) {
-              res.body = undefined;
+        next();
+      }
 
-              args.set(null, res);
-            }
-          },
-        ],
-      };
-
-      this.client._get(opts, function(err, res) {
+      this.client._get('/get', handleNotFound, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);

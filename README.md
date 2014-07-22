@@ -41,7 +41,7 @@ Make an HTTP request.
 Arguments
 
  * request (Object): request options
- * callback (Function&lt;err, res&gt;): request callback function. You should not assume a callback exists when creating client libraries (this allows for promise and generator based interfaces). Use `format` to modify results.
+ * callback (Function&lt;err, res&gt;): request callback function. You should not assume a callback exists when creating client libraries.
 
 Request
 
@@ -55,7 +55,6 @@ Request
  * timeout (Number, optional): number of milliseconds before request is aborted
  * tags (String[], optional): tags included in `_log` calls
  * options (Function, optional): a method that can do validation and set options (`request` binded to `this`)
- * format (Function|Function[], optional): a method pipeline that accepts an array of arguments which can be modified in place. Functions can return a truthy value to stop processing the pipeline. This can be used to transform the callback response.
 
 There are also `_get`, `_head`, `_post`, `_put`, `_delete`, `_patch`, and
 `_options` shortcuts with the same method signature as `_request`.
@@ -225,22 +224,6 @@ GitHub.prototype.gists = function(username, callback) {
   var opts = {
     path: '/users/{username}/gists',
     params: { username: username },
-    format: [
-      function(args) {
-        var err = args[0];
-        var res = args[1];
-
-        if (err) {
-          if (res && res.statusCode === 404) {
-            err.message = 'User "' + username + '" not found';
-          }
-
-          return [err];
-        }
-
-        return [null, res.body];
-      },
-    ],
   };
 
   return this._get(opts, callback);
@@ -253,12 +236,12 @@ GitHub.prototype.gists = function(username, callback) {
 function main() {
   var github = new GitHub({ debug: true });
 
-  github.gists('silas', function(err, gists) {
+  github.gists('silas', function(err, res) {
     if (err) throw err;
 
     console.log('----');
 
-    gists.forEach(function(gist) {
+    res.body.forEach(function(gist) {
       if (gist.description) console.log(gist.description);
     });
   });

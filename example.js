@@ -52,22 +52,6 @@ GitHub.prototype.gists = function(username, callback) {
   var opts = {
     path: '/users/{username}/gists',
     params: { username: username },
-    format: [
-      function(args) {
-        var err = args[0];
-        var res = args[1];
-
-        if (err) {
-          if (res && res.statusCode === 404) {
-            err.message = 'User "' + username + '" not found';
-          }
-
-          return [err];
-        }
-
-        return [null, res.body];
-      },
-    ],
   };
 
   return this._get(opts, callback);
@@ -80,12 +64,12 @@ GitHub.prototype.gists = function(username, callback) {
 function main() {
   var github = new GitHub({ debug: true });
 
-  github.gists('silas', function(err, gists) {
+  github.gists('silas', function(err, res) {
     if (err) throw err;
 
     console.log('----');
 
-    gists.forEach(function(gist) {
+    res.body.forEach(function(gist) {
       if (gist.description) console.log(gist.description);
     });
   });
