@@ -16,11 +16,13 @@ var sinon = require('sinon');
 var rapi = require('../lib');
 
 /**
- * Tests
+ * Helper
  */
 
 var FORM = 'application/x-www-form-urlencoded';
 var CHARSET = 'charset=utf-8';
+
+function noop() {}
 
 /**
  * Tests
@@ -147,7 +149,7 @@ describe('Client', function() {
 
       var client = rapi.Client({ baseUrl: baseUrl, timeout: 1000 });
 
-      client._get('/one');
+      client._get('/one', noop);
 
       process.nextTick(function() {
         should(self.http).eql({
@@ -174,7 +176,7 @@ describe('Client', function() {
 
       var client = rapi.Client({ baseUrl: baseUrl });
 
-      client._get('/two');
+      client._get('/two', noop);
 
       process.nextTick(function() {
         should(self.http).eql({
@@ -201,7 +203,7 @@ describe('Client', function() {
 
       var client = rapi.Client({ baseUrl: baseUrl });
 
-      client._get('/one');
+      client._get('/one', noop);
 
       process.nextTick(function() {
         should(self.https).eql({
@@ -230,7 +232,7 @@ describe('Client', function() {
 
       var client = rapi.Client({ baseUrl: baseUrl });
 
-      client._get('/two');
+      client._get('/two', noop);
 
       process.nextTick(function() {
         should(self.https).eql({
