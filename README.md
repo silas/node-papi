@@ -34,14 +34,14 @@ var client = new rapi.Client({
 });
 ```
 
-### client.\_request(request, callback)
+### client.\_request(request, [callback...], callback)
 
 Make an HTTP request.
 
 Arguments
 
  * request (Object): request options
- * callback (Function&lt;err, res&gt;): request callback function. You should not assume a callback exists when creating client libraries.
+ * callback (Function&lt;err, res&gt;): request callback function. You should not assume a final callback exists when creating client libraries.
 
 Request
 
@@ -115,14 +115,14 @@ Result
 { data: [ 'silas' ], tags: [ 'debug', 'github', 'gist' ] }
 ```
 
-### client.\_ext(event, method)
+### client.\_ext(event, callback)
 
 Register an extension function.
 
 Arguments
 
  * event (String): event name
- * method (Function): function to execute at a specified point during the request
+ * callback (Function): function to execute at a specified point during the request
 
 Usage
 
