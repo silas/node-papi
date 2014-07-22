@@ -41,7 +41,8 @@ Make an HTTP request.
 Arguments
 
  * request (Object): request options
- * callback (Function&lt;err, res&gt;): request callback function. You should not assume a final callback exists when creating client libraries.
+ * callback... (Function&lt;ctx, next&gt;): middleware functions that can mutate `ctx.err` or `ctx.res`. Call `next` without arguments to continue execution, `next(err)` to break with an error, or `next(false, arguments...)` to trigger the final callback with the given arguments.
+ * callback (Function&lt;err, res&gt;): request callback function. You should not assume this callback exists when creating client libraries.
 
 Request
 
