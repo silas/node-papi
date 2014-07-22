@@ -8,7 +8,6 @@ var debug = require('debug')('rapi');
 var events = require('events');
 var http = require('http');
 var https = require('https');
-var lodash = require('lodash');
 var nock = require('nock');
 var should = require('should');
 var sinon = require('sinon');
@@ -268,24 +267,10 @@ describe('Client', function() {
       });
       this.client.on('log', debug);
 
-      var opts;
-
-      this.client._ext('onCreate', function(ctx, next) {
-        opts = lodash.cloneDeep(ctx.opts);
-
-        next();
-      });
-
-      this.client._ext('onResponse', function(ctx, next) {
-        opts.should.eql(ctx.opts);
-
-        next();
-      });
-
       this.nock = nock(this.baseUrl);
     });
 
-    it('should GET text/plain', function(done) {
+    it('should GET text/plain @test', function(done) {
       this.nock
         .get('/get')
         .reply(200, 'ok', { 'content-type': 'text/plain' });
@@ -651,40 +636,16 @@ describe('Client', function() {
         .get(path)
         .reply(statusCode, { hello: 'world' });
 
-      self.client._ext('onCreate', function(ctx, next) {
-        ctx.should.have.keys(
-          'args',
-          'callback',
-          'client',
-          'opts',
-          'retry',
-          'stack',
-          'state'
-        );
-
-        ctx.opts.should.eql({
-          headers: {},
-          query: {},
-          params: {},
-          path: path,
-          method: 'GET',
-        });
-
-        ctx.start = new Date();
-
-        called.push('onCreate');
-
-        next();
-      });
-
       self.client._ext('onRequest', function(ctx, next) {
+        should.exist(ctx);
+
         called.push('onRequest');
 
         next();
       });
 
       self.client._ext('onResponse', function(ctx, next) {
-        ctx.should.have.properties('opts', 'start');
+        ctx.should.have.properties('opts', 'state');
 
         ctx.opts.should.eql({
           headers: {},
@@ -716,7 +677,7 @@ describe('Client', function() {
 
         should.exist(res);
 
-        called.should.eql(['onCreate', 'onRequest', 'onResponse']);
+        called.should.eql(['onRequest', 'onResponse']);
 
         done();
       });
@@ -734,23 +695,19 @@ describe('Client', function() {
 
       var callback = function() {};
 
-      self.client._ext('onReturn', function(ctx, result) {
-        if (result) {
-          throw new Error('onReturn already registered');
-        }
+      self.client._ext('onPreRequestSetup', function(ctx) {
+        ctx.should.have.properties('opts');
 
-        ctx.should.have.properties('opts', 'callback');
+        ctx._callback.should.equal(callback);
 
-        ctx.callback.should.equal(callback);
-
-        ctx.callback = function(err, res) {
+        ctx._callback = function(err, res) {
           should.not.exist(err);
           should.exist(res);
 
           done();
         };
 
-        return 'custom';
+        ctx._return = 'custom';
       });
 
       self.client._get(path, callback).should.eql('custom');
