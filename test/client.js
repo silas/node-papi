@@ -20,6 +20,7 @@ var rapi = require('../lib');
 
 var FORM = 'application/x-www-form-urlencoded';
 var CHARSET = 'charset=utf-8';
+var BASE_URL = 'http://example.org';
 
 function noop() {}
 
@@ -28,6 +29,37 @@ function noop() {}
  */
 
 describe('Client', function() {
+  describe('new', function() {
+    it('should accept string as baseUrl', function() {
+      var client = rapi.Client(BASE_URL);
+
+      var baseUrl = client._opts.baseUrl;
+
+      baseUrl.protocol.should.eql('http:');
+      baseUrl.host.should.eql('example.org');
+      baseUrl.path.should.eql('');
+      baseUrl.pathname.should.eql('');
+    });
+
+    it('should require baseUrl', function() {
+      (function() {
+        rapi.Client();
+      }).should.throw('baseUrl required');
+    });
+
+    it('should require baseUrl be a string', function() {
+      (function() {
+        rapi.Client({ baseUrl: 123 });
+      }).should.throw('baseUrl must be a string: 123');
+    });
+
+    it('should error on trailing slash', function() {
+      (function() {
+        rapi.Client(BASE_URL + '/nope/');
+      }).should.throw('baseUrl must not end with a forward slash');
+    });
+  });
+
   describe('err', function() {
     beforeEach(function() {
       this.client = rapi.Client('http://example.org');
@@ -268,6 +300,18 @@ describe('Client', function() {
       this.client.on('log', debug);
 
       this.nock = nock(this.baseUrl);
+    });
+
+    it('should emit error when no callback provided', function(done) {
+      this.client.on('error', function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: callback required');
+
+        done();
+      });
+
+      this.client._get('/get');
     });
 
     it('should GET text/plain', function(done) {
@@ -710,6 +754,10 @@ describe('Client', function() {
         ctx._return = 'custom';
       });
 
+      self.client._ext('onPostRequestSetup', function(ctx) {
+        ctx._return.should.eql('custom');
+      });
+
       self.client._get(path, callback).should.eql('custom');
     });
 
@@ -768,11 +816,19 @@ describe('Client', function() {
         next();
       }
 
-      this.client._get('/get', handleNotFound, function(err, res) {
+      function check(ctx, next) {
+        should.not.exist(ctx.err);
+
+        should.exist(ctx.res);
+        should(ctx.res.body).equal(undefined);
+
+        next(false, null, 'world');
+      }
+
+      this.client._get('/get', handleNotFound, check, function(err, hello) {
         should.not.exist(err);
 
-        should.exist(res);
-        should(res.body).equal(undefined);
+        hello.should.eql('world');
 
         done();
       });
