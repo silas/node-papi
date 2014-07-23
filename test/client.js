@@ -270,7 +270,7 @@ describe('Client', function() {
       this.nock = nock(this.baseUrl);
     });
 
-    it('should GET text/plain @test', function(done) {
+    it('should GET text/plain', function(done) {
       this.nock
         .get('/get')
         .reply(200, 'ok', { 'content-type': 'text/plain' });
@@ -713,34 +713,13 @@ describe('Client', function() {
       self.client._get(path, callback).should.eql('custom');
     });
 
-    it('should call options', function(done) {
-      var opts = {
-        path: '/get',
-        name: 'testoptions',
-        params: { hello: 'world' },
-      };
-
-      opts.options = function() {
-        this.should.have.keys(
-          'method',
-          'name',
-          'params',
-          'query',
-          'headers',
-          'path',
-          'options'
-        );
-
-        this.path.should.eql('/get');
-        this.params.should.eql({ hello: 'world' });
-
-        throw new Error('hello world');
-      };
+    it('should handle error in opts', function(done) {
+      var opts = new Error('hello world');
 
       this.client._get(opts, function(err) {
         should.exist(err);
 
-        err.message.should.eql('testclient: testoptions: hello world');
+        err.message.should.eql('testclient: hello world');
 
         done();
       });
