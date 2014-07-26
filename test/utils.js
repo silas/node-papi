@@ -19,6 +19,7 @@ describe('utils', function() {
       utils.isEmpty(false).should.equal(true);
       utils.isEmpty([]).should.equal(true);
       utils.isEmpty(true).should.equal(true);
+      utils.isEmpty({}).should.equal(true);
     });
 
     it('should handle non-empty values', function() {

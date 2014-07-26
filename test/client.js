@@ -1,5 +1,7 @@
 'use strict';
 
+/* jshint expr: true */
+
 /**
  * Module dependencies.
  */
@@ -24,6 +26,10 @@ var BASE_URL = 'http://example.org';
 
 function noop() {}
 
+function make() {
+  return rapi.Client(BASE_URL);
+}
+
 /**
  * Tests
  */
@@ -31,7 +37,7 @@ function noop() {}
 describe('Client', function() {
   describe('new', function() {
     it('should accept string as baseUrl', function() {
-      var client = rapi.Client(BASE_URL);
+      var client = make();
 
       var baseUrl = client._opts.baseUrl;
 
@@ -61,16 +67,12 @@ describe('Client', function() {
   });
 
   describe('err', function() {
-    beforeEach(function() {
-      this.client = rapi.Client('http://example.org');
-    });
-
     it('should return nothing', function() {
-      should.not.exist(this.client.__err());
+      should.not.exist(make()._err());
     });
 
     it('should convert string to error', function() {
-      var err = this.client.__err('test');
+      var err = make()._err('test');
 
       should(err).be.instanceof(Error);
 
@@ -81,7 +83,7 @@ describe('Client', function() {
       var message = 'ok';
 
       var err1 = new Error(message);
-      var err2 = this.client.__err(err1);
+      var err2 = make()._err(err1);
 
       should(err2).be.instanceof(Error);
       err2.should.equal(err1);
@@ -89,9 +91,11 @@ describe('Client', function() {
     });
 
     it('should add client name', function() {
-      this.client._opts.name = 'client';
+      var client = make();
 
-      var err = this.client.__err('ok');
+      client._opts.name = 'client';
+
+      var err = client._err('ok');
 
       err.message.should.eql('client: ok');
     });
@@ -99,26 +103,63 @@ describe('Client', function() {
     it('should add opts name', function() {
       var opts = { name: 'opts' };
 
-      var err = this.client.__err('ok', opts);
+      var err = make()._err('ok', opts);
 
       err.message.should.eql('opts: ok');
     });
 
     it('should add client and opts name', function() {
-      this.client._opts.name = 'client';
-      var opts = { name: 'opts' };
+      var client = make();
 
-      var err = this.client.__err('ok', opts);
+      client._opts.name = 'client';
+
+      var err = client._err('ok', { name: 'opts' });
 
       err.message.should.eql('client: opts: ok');
     });
   });
 
+  describe('ext', function() {
+    it('should register extension', function() {
+      var client = make();
+
+      client._exts.should.be.empty;
+
+      var name = 'test';
+
+      client._ext(name, noop);
+
+      client._exts.should.have.keys(name);
+      client._exts[name].should.be.instanceof(Array);
+      client._exts[name].should.eql([noop]);
+
+      client._ext(name, noop);
+
+      client._exts[name].should.eql([noop, noop]);
+    });
+
+    it('should require an event name', function() {
+      (function() {
+        make()._ext();
+      }).should.throw('extension eventName required');
+
+      (function() {
+        make()._ext(true);
+      }).should.throw('extension eventName required');
+    });
+
+    it('should require callback', function() {
+      (function() {
+        make()._ext('test');
+      }).should.throw('extension callback required');
+    });
+  });
+
   describe('plugin', function() {
     it('should register', function(done) {
-      var client = rapi.Client('http://example.org');
-      var options = {};
+      var client = make();
 
+      var options = {};
       var plugin = {};
 
       plugin.register = function(pluginClient, pluginOptions) {
@@ -134,6 +175,253 @@ describe('Client', function() {
       };
 
       client._plugin(plugin, options);
+    });
+
+    it('should require plugin option', function() {
+      (function() {
+        make()._plugin();
+      }).should.throw('plugin required');
+    });
+
+    it('should require register be a function', function() {
+      var plugin = {
+        register: {},
+      };
+
+      (function() {
+        make()._plugin(plugin);
+      }).should.throw('plugin must have register function');
+    });
+
+    it('should require attributes', function() {
+      var plugin = {
+        register: function() {},
+      };
+
+      (function() {
+        make()._plugin(plugin);
+      }).should.throw('plugin attributes required');
+    });
+
+    it('should require attributes name', function() {
+      var plugin = {
+        register: function() {},
+      };
+
+      plugin.register.attributes = {};
+
+      (function() {
+        make()._plugin(plugin);
+      }).should.throw('plugin attributes name required');
+    });
+
+    it('should require attributes version', function() {
+      var plugin = {
+        register: function() {},
+      };
+
+      plugin.register.attributes = {
+        name: 'test',
+      };
+
+      (function() {
+        make()._plugin(plugin);
+      }).should.throw('plugin attributes version required');
+    });
+
+    it('should set default options', function(done) {
+      var plugin = {
+        register: function(client, options) {
+          should.exist(options);
+
+          done();
+        },
+      };
+
+      plugin.register.attributes = {
+        name: 'test',
+        version: '1.2.3',
+      };
+
+      make()._plugin(plugin);
+    });
+  });
+
+  describe('log', function() {
+    it('should emit logs', function(done) {
+      var client = make();
+
+      client.on('log', function(tags, data) {
+        tags.should.eql(['tag1', 'tag2']);
+        data.should.eql('done');
+
+        done();
+      });
+
+      client._log(['tag1', 'tag2'], 'done');
+    });
+  });
+
+  describe('encode', function() {
+    it('should throw on unknown encoder', function() {
+      (function() {
+        make()._encode('fail');
+      }).should.throw('unknown encoder: fail');
+    });
+
+    it('should throw on invalid content', function() {
+      var data = {};
+      data[data] = data;
+
+      (function() {
+        make()._encode('application/json', data);
+      }).should.throw('encode (application/json) failed: ' +
+        'Converting circular structure to JSON');
+    });
+  });
+
+  describe('decode', function() {
+    it('should throw on unknown decoder', function() {
+      (function() {
+        make()._decode('fail');
+      }).should.throw('unknown decoder: fail');
+    });
+
+    it('should throw on invalid content', function() {
+      (function() {
+        make()._decode('application/json', '<html>');
+      }).should.throw('decode (application/json) failed: Unexpected token <');
+    });
+  });
+
+  describe('push', function() {
+    it('should push method item', function() {
+      var ctx = {
+        _stack: [],
+        opts: { exts: { test: noop } },
+      };
+
+      make().__push(ctx, 'test');
+
+      ctx._stack.should.eql([noop]);
+    });
+
+    it('should push client and method items', function() {
+      var client = make();
+
+      var one = function() {};
+      var two = function() {};
+
+      client._ext('test', one);
+
+      var ctx = {
+        _stack: [],
+        opts: { exts: {} },
+      };
+
+      ctx.opts.exts.test = [two];
+
+      client.__push(ctx, 'test');
+
+      ctx._stack.should.eql([one, two]);
+    });
+  });
+
+  describe('request @test', function() {
+    beforeEach(function() {
+      this.client = rapi.Client({
+        baseUrl: BASE_URL,
+        headers: { key: 'value' },
+        name: 'testclient',
+      });
+    });
+
+    it('should not crash with null opts', function(done) {
+      this.client._request(null, function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: path required');
+
+        done();
+      });
+    });
+
+    it('should not crash helper methods with null opts', function(done) {
+      this.client._get(null, function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: path required');
+
+        done();
+      });
+    });
+
+    it('should emit error when no callback provided', function(done) {
+      this.client.on('error', function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: callback required');
+
+        done();
+      });
+
+      this.client._get('/get');
+    });
+
+    it('should require all params', function(done) {
+      var req = {
+        path: '/one/{two}',
+      };
+
+      this.client._get(req, function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: missing param: two');
+
+        done();
+      });
+    });
+
+    it('should handle query encode errors', function(done) {
+      var req = {
+        path: '/get',
+        query: 'fail',
+      };
+
+      var mime = 'application/x-www-form-urlencoded';
+
+      this.client._opts.encoders[mime] = function() {
+        throw new Error('something went wrong');
+      };
+
+      this.client._get(req, function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: encode (' + mime + ') ' +
+          'failed: something went wrong');
+
+        done();
+      });
+    });
+
+    it('should handle body encode errors', function(done) {
+      var data = {};
+      data[data] = data;
+
+      var req = {
+        path: '/get',
+        type: 'json',
+        body: data,
+      };
+
+      this.client._post(req, function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: encode (application/json) ' +
+          'failed: Converting circular structure to JSON');
+
+        done();
+      });
     });
   });
 
@@ -203,7 +491,7 @@ describe('Client', function() {
       var method = 'GET';
 
       var baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
-                    '/one';
+        '/one';
 
       var client = rapi.Client({ baseUrl: baseUrl });
 
@@ -259,7 +547,7 @@ describe('Client', function() {
       var method = 'GET';
 
       var baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
-                    '/one';
+        '/one';
 
       var client = rapi.Client({ baseUrl: baseUrl });
 
@@ -280,7 +568,7 @@ describe('Client', function() {
     });
   });
 
-  describe('request', function() {
+  describe('nock', function() {
     before(function() {
       nock.disableNetConnect();
     });
@@ -300,18 +588,6 @@ describe('Client', function() {
       this.client.on('log', debug);
 
       this.nock = nock(this.baseUrl);
-    });
-
-    it('should emit error when no callback provided', function(done) {
-      this.client.on('error', function(err) {
-        should.exist(err);
-
-        err.message.should.eql('testclient: callback required');
-
-        done();
-      });
-
-      this.client._get('/get');
     });
 
     it('should GET text/plain', function(done) {
@@ -383,6 +659,47 @@ describe('Client', function() {
       });
     });
 
+    it('should return buffer for known content-types', function(done) {
+      this.nock
+        .get('/get')
+        .reply(200, { hello: 'world' });
+
+      var opts = {
+        path: '/get',
+        buffer: true,
+      };
+
+      this.client._get(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+        should.exist(res.body);
+        res.body.should.be.instanceof(Buffer);
+        res.body.toString().should.eql('{"hello":"world"}');
+
+        res.statusCode.should.eql(200);
+
+        done();
+      });
+    });
+
+    it('should handle response decode errors @haha', function(done) {
+      this.nock
+        .get('/get')
+        .reply(200, '<html>', { 'content-type': 'application/json' });
+
+      this.client._get('/get', function(err, res) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: decode (application/json) ' +
+          'failed: Unexpected token <');
+
+        res.body.toString().should.eql('<html>');
+
+        done();
+      });
+    });
+
     it('should create request with path replacement', function(done) {
       this.nock
         .get('/hello%20world/0/hello%20world/2/')
@@ -392,6 +709,29 @@ describe('Client', function() {
         path: '/{saying}/0/{saying}/{count}/',
         params: { saying: 'hello world', count: 2 },
       };
+
+      this.client._get(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+        res.statusCode.should.eql(200);
+
+        done();
+      });
+    });
+
+    it('should support unescaped path params', function(done) {
+      this.nock
+        .get('/hello%2Bworld/')
+        .reply(200);
+
+      var opts = {
+        path: '/{test}/{extra}',
+        params: { extra: null },
+      };
+
+      opts.params.test = new Buffer('hello%2Bworld');
+      opts.params.test.encode = false;
 
       this.client._get(opts, function(err, res) {
         should.not.exist(err);
@@ -456,6 +796,28 @@ describe('Client', function() {
       };
 
       this.client._request(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+
+        done();
+      });
+    });
+
+    it('should handle buffer body', function(done) {
+      this.nock
+        .post('/post', 'test')
+        .matchHeader('content-type', 'custom')
+        .matchHeader('content-length', 4)
+        .reply(200);
+
+      var opts = {
+        path: '/post',
+        body: new Buffer('test'),
+        headers: { 'content-type': 'custom' },
+      };
+
+      this.client._post(opts, function(err, res) {
         should.not.exist(err);
 
         should.exist(res);
@@ -727,52 +1089,6 @@ describe('Client', function() {
       });
     });
 
-    it('should allow user to set return value', function(done) {
-      var self = this;
-
-      var path = '/get';
-      var statusCode = 200;
-
-      self.nock
-        .get(path)
-        .reply(statusCode, { hello: 'world' });
-
-      var callback = function() {};
-
-      self.client._ext('onPreRequestSetup', function(ctx) {
-        ctx.should.have.properties('opts');
-
-        ctx._callback.should.equal(callback);
-
-        ctx._callback = function(err, res) {
-          should.not.exist(err);
-          should.exist(res);
-
-          done();
-        };
-
-        ctx._return = 'custom';
-      });
-
-      self.client._ext('onPostRequestSetup', function(ctx) {
-        ctx._return.should.eql('custom');
-      });
-
-      self.client._get(path, callback).should.eql('custom');
-    });
-
-    it('should handle error in opts', function(done) {
-      var opts = new Error('hello world');
-
-      this.client._get(opts, function(err) {
-        should.exist(err);
-
-        err.message.should.eql('testclient: hello world');
-
-        done();
-      });
-    });
-
     it('should support retry', function(done) {
       this.nock
         .get('/retry')
@@ -829,6 +1145,26 @@ describe('Client', function() {
         should.not.exist(err);
 
         hello.should.eql('world');
+
+        done();
+      });
+    });
+
+    it('should timeout request', function(done) {
+      this.nock
+        .get('/get')
+        .delayConnection(200)
+        .reply(200);
+
+      var opts = {
+        path: '/get',
+        timeout: 10,
+      };
+
+      this.client._get(opts, function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: request timed out (10ms)');
 
         done();
       });

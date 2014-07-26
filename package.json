@@ -1,6 +1,6 @@
 {
   "name": "rapi",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Build HTTP API clients",
   "main": "lib",
   "devDependencies": {
@@ -15,7 +15,7 @@
     "sinon": "^1.10.3"
   },
   "scripts": {
-    "test": "./node_modules/.bin/jshint lib test && ./node_modules/.bin/jscs lib test && ./node_modules/.bin/mocha --recursive  --check-leaks"
+    "test": "./node_modules/.bin/jshint lib test && ./node_modules/.bin/jscs lib test && ./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --recursive  --check-leaks"
   },
   "repository": {
     "type": "git",
