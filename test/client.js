@@ -328,7 +328,7 @@ describe('Client', function() {
     });
   });
 
-  describe('request @test', function() {
+  describe('request', function() {
     beforeEach(function() {
       this.client = rapi.Client({
         baseUrl: BASE_URL,
@@ -684,7 +684,7 @@ describe('Client', function() {
       });
     });
 
-    it('should handle response decode errors @haha', function(done) {
+    it('should handle response decode errors', function(done) {
       this.nock
         .get('/get')
         .reply(200, '<html>', { 'content-type': 'application/json' });
@@ -805,7 +805,7 @@ describe('Client', function() {
       });
     });
 
-    it('should handle buffer body', function(done) {
+    it('should handle Buffer body', function(done) {
       this.nock
         .post('/post', 'test')
         .matchHeader('content-type', 'custom')
@@ -827,7 +827,7 @@ describe('Client', function() {
       });
     });
 
-    it('should handle readable stream body', function(done) {
+    it('should handle stream.Readable body', function(done) {
       this.nock
         .post('/post', 'test')
         .reply(200);
@@ -846,6 +846,37 @@ describe('Client', function() {
         should.not.exist(err);
 
         should.exist(res);
+
+        done();
+      });
+    });
+
+    it('should handle stream.Writable pipe', function(done) {
+      this.nock
+        .get('/get')
+        .reply(200, { hello: 'world' });
+
+      var chunks = [];
+
+      var bodyPipe = new stream.Writable();
+
+      bodyPipe._write = function(chunk, encoding, callback) {
+        chunks.push(chunk);
+
+        callback();
+      };
+
+      var opts = {
+        path: '/get',
+        pipe: bodyPipe,
+      };
+
+      this.client._get(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+
+        Buffer.concat(chunks).toString().should.eql('{"hello":"world"}');
 
         done();
       });
@@ -1205,6 +1236,84 @@ describe('Client', function() {
       this.client._post(req, function(err, res) {
         should.not.exist(err);
         should.exist(res);
+
+        responses.should.eql([503, 200]);
+
+        done();
+      });
+    });
+
+    it('should error retry when pipe is stream.Writable', function(done) {
+      this.nock
+        .get('/retry')
+        .reply(500);
+
+      this.client._ext('onResponse', function(ctx, next) {
+        try {
+          ctx.retry();
+        } catch (err) {
+          next(err);
+        }
+      });
+
+      var req = {
+        path: '/retry',
+        pipe: new stream.Writable(),
+      };
+
+      this.client._get(req, function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: request is not retryable');
+
+        done();
+      });
+    });
+
+    it('should retry when pipe is a function stream', function(done) {
+      this.nock
+        .get('/retry')
+        .reply(503)
+        .get('/retry')
+        .reply(200, { hello: 'world' });
+
+      var responses = [];
+
+      this.client._ext('onResponse', function(ctx, next) {
+        responses.push(ctx.res.statusCode);
+
+        if (Math.floor(ctx.res.statusCode / 100) !== 5) return next();
+
+        ctx.retry();
+      });
+
+      var chunks;
+
+      var pipe = function() {
+        chunks = [];
+
+        var bodyPipe = new stream.Writable();
+
+        bodyPipe._write = function(chunk, encoding, callback) {
+          chunks.push(chunk);
+
+          callback();
+        };
+
+        return bodyPipe;
+      };
+
+      var opts = {
+        path: '/retry',
+        pipe: pipe,
+      };
+
+      this.client._get(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+
+        Buffer.concat(chunks).toString().should.eql('{"hello":"world"}');
 
         responses.should.eql([503, 200]);
 
