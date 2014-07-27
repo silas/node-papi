@@ -51,7 +51,7 @@ Request
  * headers (Object&lt;String, String&gt;, optional): request headers
  * params (Object&lt;String, String&gt;, optional): sets variables in request path
  * query (Object&lt;String, String|String[]&gt;, optional): query parameters
- * body (Object|Buffer|String, optional): request body
+ * body (Object|Buffer|Readable, optional): request body
  * type (String, optional, supports: form, json, text): request body encoding type
  * timeout (Number, optional): number of milliseconds before request is aborted
  * tags (String[], optional): tags included in `_log` calls

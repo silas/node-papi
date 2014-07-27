@@ -13,6 +13,7 @@ var https = require('https');
 var nock = require('nock');
 var should = require('should');
 var sinon = require('sinon');
+var stream = require('stream');
 
 var rapi = require('../lib');
 
@@ -826,6 +827,30 @@ describe('Client', function() {
       });
     });
 
+    it('should handle readable stream body', function(done) {
+      this.nock
+        .post('/post', 'test')
+        .reply(200);
+
+      var body = new stream.Readable();
+
+      body.push(new Buffer('test'));
+      body.push(null);
+
+      var opts = {
+        path: '/post',
+        body: body,
+      };
+
+      this.client._post(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+
+        done();
+      });
+    });
+
     it('should POST application/x-www-form-urlencoded', function(done) {
       this.nock
         .post('/post', 'hello=world')
@@ -1113,6 +1138,75 @@ describe('Client', function() {
         should.exist(res);
 
         responses.should.eql([500, 503, 200]);
+
+        done();
+      });
+    });
+
+    it('should error retry when body is a stream', function(done) {
+      this.nock
+        .post('/retry', 'test')
+        .reply(503);
+
+      this.client._ext('onResponse', function(ctx, next) {
+        try {
+          ctx.retry();
+        } catch (err) {
+          next(err);
+        }
+      });
+
+      var req = {
+        path: '/retry',
+        body: new stream.Readable(),
+      };
+
+      req.body.push(new Buffer('test'));
+      req.body.push(null);
+
+      this.client._post(req, function(err) {
+        should.exist(err);
+
+        err.message.should.eql('testclient: request is not retryable');
+
+        done();
+      });
+    });
+
+    it('should retry when body is a function stream', function(done) {
+      this.nock
+        .post('/retry', 'test')
+        .reply(503)
+        .post('/retry', 'test')
+        .reply(200);
+
+      var responses = [];
+
+      this.client._ext('onResponse', function(ctx, next) {
+        responses.push(ctx.res.statusCode);
+
+        if (Math.floor(ctx.res.statusCode / 100) !== 5) return next();
+
+        ctx.retry();
+      });
+
+      var body = function() {
+        var s = new stream.Readable();
+        s.push(new Buffer('test'));
+        s.push(null);
+        return s;
+      };
+
+      var req = {
+        path: '/retry',
+        body: body,
+      };
+
+      this.client._post(req, function(err, res) {
+        should.not.exist(err);
+        should.exist(res);
+
+        responses.should.eql([503, 200]);
 
         done();
       });
