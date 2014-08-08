@@ -1,4 +1,4 @@
-# Rapi [![Build Status](https://travis-ci.org/silas/node-rapi.png?branch=master)](https://travis-ci.org/silas/node-rapi)
+# Papi [![Build Status](https://travis-ci.org/silas/node-papi.png?branch=master)](https://travis-ci.org/silas/node-papi)
 
 This is a module for building HTTP API clients.
 
@@ -8,7 +8,7 @@ This is a module for building HTTP API clients.
 
 ## Documentation
 
-### rapi.Client([options])
+### papi.Client([options])
 
 Initialize a new client.
 
@@ -25,11 +25,11 @@ Options
 Usage
 
 ``` javascript
-var rapi = require('rapi');
+var papi = require('papi');
 
-var client = new rapi.Client({
+var client = new papi.Client({
   baseUrl: 'https://api.github.com',
-  headers: { 'user-agent': 'RapiGitHub/0.1.0' },
+  headers: { 'user-agent': 'PapiGitHub/0.1.0' },
   timeout: 5 * 1000,
 });
 ```
@@ -164,7 +164,7 @@ Arguments
 Usage
 
 ``` javascript
-client._plugin(require('rapi-retry'));
+client._plugin(require('papi-retry'));
 ```
 
 ## Example
@@ -174,7 +174,7 @@ client._plugin(require('rapi-retry'));
  * Module dependencies.
  */
 
-var rapi = require('rapi');
+var papi = require('papi');
 var util = require('util');
 
 /**
@@ -194,7 +194,7 @@ function GitHub(opts) {
     opts.headers.accept = 'application/vnd.github.v3+json';
   }
   if (!opts.headers['user-agent']) {
-    opts.headers['user-agent'] = 'RapiGitHub/0.1.0';
+    opts.headers['user-agent'] = 'PapiGitHub/0.1.0';
   }
   if (opts.tags) {
     opts.tags = ['github'].concat(opts.tags);
@@ -205,14 +205,14 @@ function GitHub(opts) {
     opts.timeout = 60 * 1000;
   }
 
-  rapi.Client.call(this, opts);
+  papi.Client.call(this, opts);
 
   if (opts.debug) {
     this.on('log', console.log);
   }
 }
 
-util.inherits(GitHub, rapi.Client);
+util.inherits(GitHub, papi.Client);
 
 /**
  * Get user gists

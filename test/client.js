@@ -6,7 +6,7 @@
  * Module dependencies.
  */
 
-var debug = require('debug')('rapi');
+var debug = require('debug')('papi');
 var events = require('events');
 var http = require('http');
 var https = require('https');
@@ -15,7 +15,7 @@ var should = require('should');
 var sinon = require('sinon');
 var stream = require('stream');
 
-var rapi = require('../lib');
+var papi = require('../lib');
 
 /**
  * Helper
@@ -28,7 +28,7 @@ var BASE_URL = 'http://example.org';
 function noop() {}
 
 function make() {
-  return rapi.Client(BASE_URL);
+  return papi.Client(BASE_URL);
 }
 
 /**
@@ -50,19 +50,19 @@ describe('Client', function() {
 
     it('should require baseUrl', function() {
       (function() {
-        rapi.Client();
+        papi.Client();
       }).should.throw('baseUrl required');
     });
 
     it('should require baseUrl be a string', function() {
       (function() {
-        rapi.Client({ baseUrl: 123 });
+        papi.Client({ baseUrl: 123 });
       }).should.throw('baseUrl must be a string: 123');
     });
 
     it('should error on trailing slash', function() {
       (function() {
-        rapi.Client(BASE_URL + '/nope/');
+        papi.Client(BASE_URL + '/nope/');
       }).should.throw('baseUrl must not end with a forward slash');
     });
   });
@@ -330,7 +330,7 @@ describe('Client', function() {
 
   describe('request', function() {
     beforeEach(function() {
-      this.client = rapi.Client({
+      this.client = papi.Client({
         baseUrl: BASE_URL,
         headers: { key: 'value' },
         name: 'testclient',
@@ -467,7 +467,7 @@ describe('Client', function() {
 
       var baseUrl = protocol + '//' + hostname;
 
-      var client = rapi.Client({ baseUrl: baseUrl, timeout: 1000 });
+      var client = papi.Client({ baseUrl: baseUrl, timeout: 1000 });
 
       client._get('/one', noop);
 
@@ -494,7 +494,7 @@ describe('Client', function() {
       var baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
         '/one';
 
-      var client = rapi.Client({ baseUrl: baseUrl });
+      var client = papi.Client({ baseUrl: baseUrl });
 
       client._get('/two', noop);
 
@@ -521,7 +521,7 @@ describe('Client', function() {
 
       var baseUrl = protocol + '//' + hostname;
 
-      var client = rapi.Client({ baseUrl: baseUrl });
+      var client = papi.Client({ baseUrl: baseUrl });
 
       client._get('/one', noop);
 
@@ -550,7 +550,7 @@ describe('Client', function() {
       var baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
         '/one';
 
-      var client = rapi.Client({ baseUrl: baseUrl });
+      var client = papi.Client({ baseUrl: baseUrl });
 
       client._get('/two', noop);
 
@@ -581,7 +581,7 @@ describe('Client', function() {
     beforeEach(function() {
       this.baseUrl = 'http://example.org';
 
-      this.client = rapi.Client({
+      this.client = papi.Client({
         baseUrl: this.baseUrl,
         headers: { key: 'value' },
         name: 'testclient',
