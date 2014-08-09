@@ -24,7 +24,7 @@ function GitHub(opts) {
     opts.headers.accept = 'application/vnd.github.v3+json';
   }
   if (!opts.headers['user-agent']) {
-    opts.headers['user-agent'] = 'RapiGitHub/0.1.0';
+    opts.headers['user-agent'] = 'PapiGitHub/0.1.0';
   }
   if (opts.tags) {
     opts.tags = ['github'].concat(opts.tags);
