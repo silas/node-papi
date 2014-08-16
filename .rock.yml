@@ -14,3 +14,8 @@ coverage: |
   if type -f open &>/dev/null; then
     open coverage/lcov-report/index.html
   fi
+
+performance: |
+  export CI='true'
+
+  exec mocha --recursive --reporter spec test/performance.js

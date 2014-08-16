@@ -4,6 +4,7 @@
   "description": "Build HTTP API clients",
   "main": "lib",
   "devDependencies": {
+    "async": "^0.9.0",
     "debug": "^1.0.3",
     "istanbul": "^0.3.0",
     "jscs": "^1.5.9",
@@ -11,6 +12,7 @@
     "lodash": "^2.4.1",
     "mocha": "^1.21.4",
     "nock": "^0.44.1",
+    "request": "^2.40.0",
     "should": "^4.0.4",
     "sinon": "^1.10.3"
   },
