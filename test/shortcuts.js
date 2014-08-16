@@ -29,6 +29,26 @@ describe('Shortcuts', function() {
     this.nock = nock(this.baseUrl);
   });
 
+  it('should require url', function(done) {
+    papi.request(null, function(err) {
+      should.exist(err);
+
+      err.message.should.eql('url required');
+
+      done();
+    });
+  });
+
+  it('should require url to be string', function(done) {
+    papi.request({ url: true }, function(err) {
+      should.exist(err);
+
+      err.message.should.eql('url must be a string');
+
+      done();
+    });
+  });
+
   it('should make request', function(done) {
     this.nock
       .get('/test')
@@ -40,6 +60,20 @@ describe('Shortcuts', function() {
     };
 
     papi.request(opts, function(err, res) {
+      should.not.exist(err);
+
+      res.statusCode.should.eql(200);
+
+      done();
+    });
+  });
+
+  it('should make request with string url', function(done) {
+    this.nock
+      .get('/test')
+      .reply(200);
+
+    papi.request(this.baseUrl + '/test', function(err, res) {
       should.not.exist(err);
 
       res.statusCode.should.eql(200);
@@ -67,6 +101,16 @@ describe('Shortcuts', function() {
       should(res.body).eql({ is: 'ok' });
 
       res.statusCode.should.eql(200);
+
+      done();
+    });
+  });
+
+  it('should require url in method calls', function(done) {
+    papi.get(null, function(err) {
+      should.exist(err);
+
+      err.message.should.eql('url required');
 
       done();
     });
