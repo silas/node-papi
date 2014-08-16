@@ -74,6 +74,18 @@ tests.papi = function(test) {
   };
 };
 
+tests.shortcut = function(test) {
+  return function(i, next) {
+    papi.get(test.url, function(err, res) {
+      if (err) return next(err);
+
+      should.equal(res.body.hello, 'world');
+
+      next();
+    });
+  };
+};
+
 tests.request = function(test) {
   return function(i, next) {
     request({ uri: test.url, json: true }, function(err, res) {
@@ -156,6 +168,10 @@ runner('Performance', function() {
 
     jobs.push(function(next) {
       run({ name: 'Papi', test: tests.papi(self) }, next);
+    });
+
+    jobs.push(function(next) {
+      run({ name: 'Shortcut', test: tests.shortcut(self) }, next);
     });
 
     jobs.push(function(next) {
