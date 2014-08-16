@@ -193,7 +193,8 @@ runner('Performance', function() {
 
       console.log();
 
-      data.papi.duration.should.be.below(data.http.duration * 1.75);
+      data.papi.duration.should.be.below(data.http.duration * 2);
+      data.shortcut.duration.should.be.below(data.http.duration * 2);
 
       done();
     });
