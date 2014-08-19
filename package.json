@@ -1,6 +1,6 @@
 {
   "name": "papi",
-  "version": "0.14.1",
+  "version": "0.15.0",
   "description": "Build HTTP API clients",
   "main": "lib",
   "devDependencies": {
@@ -11,7 +11,7 @@
     "jshint": "^2.5.3",
     "lodash": "^2.4.1",
     "mocha": "^1.21.4",
-    "nock": "^0.44.1",
+    "nock": "^0.45.0",
     "request": "^2.40.0",
     "should": "^4.0.4",
     "sinon": "^1.10.3"

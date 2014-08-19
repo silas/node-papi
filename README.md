@@ -87,7 +87,7 @@ body [ { url: 'https://api.github.com/gists/9458207',
 ...
 ```
 
-### client.\_log(tags, [data...])
+### client.\_log(tags, [data])
 
 Emit log events.
 
@@ -106,7 +106,7 @@ client.on('log', function(tags) {
   });
 });;
 
-client._log(['debug', 'github', 'gist'], 'silas');
+client._log(['github', 'gist'], 'silas');
 ```
 
 Result
