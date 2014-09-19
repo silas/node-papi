@@ -1170,6 +1170,7 @@ describe('Client', function() {
       });
 
       var opts = {
+        name: 'method',
         path: '/post',
         body: { name: 'world' },
         type: 'json',
@@ -1183,7 +1184,7 @@ describe('Client', function() {
 
         events.length.should.eql(2);
 
-        events[0][0].should.eql(['debug', 'request', 'test']);
+        events[0][0].should.eql(['papi', 'request', 'test', 'class', 'method']);
         events[0][1].should.eql({
           hostname: 'example.org',
           port: 80,
@@ -1198,7 +1199,8 @@ describe('Client', function() {
           host: 'example.org:80',
         });
 
-        events[1][0].should.eql(['debug', 'response', 'test']);
+        events[1][0].should.eql(['papi', 'response', 'test', 'class',
+                                'method']);
         events[1][1].should.eql({
           statusCode: 200,
           headers: {
@@ -1240,6 +1242,7 @@ describe('Client', function() {
           params: {},
           path: path,
           method: 'GET',
+          tags: ['testclient'],
         });
 
         ctx.req.method.should.eql('GET');
