@@ -827,6 +827,45 @@ describe('Client', function() {
       });
     });
 
+    it('should handle function body', function(done) {
+      this.nock
+        .post('/post', 'test')
+        .matchHeader('content-type', 'custom')
+        .matchHeader('content-length', 4)
+        .reply(200);
+
+      var opts = {
+        path: '/post',
+        body: function() { return new Buffer('test'); },
+        headers: { 'content-type': 'custom' },
+      };
+
+      this.client._post(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+
+        done();
+      });
+    });
+
+    it('should catch function body errors', function(done) {
+      var opts = {
+        path: '/post',
+        body: function() { throw new Error('body'); },
+        type: 'json',
+      };
+
+      this.client._post(opts, function(err, res) {
+        should.exist(err);
+        err.message.should.equal('testclient: body');
+
+        should.not.exist(res);
+
+        done();
+      });
+    });
+
     it('should handle stream.Readable body', function(done) {
       this.nock
         .post('/post', 'test')
@@ -877,6 +916,75 @@ describe('Client', function() {
         should.exist(res);
 
         Buffer.concat(chunks).toString().should.eql('{"hello":"world"}');
+
+        done();
+      });
+    });
+
+    it('should handle function stream.Writable pipe', function(done) {
+      this.nock
+        .get('/get')
+        .reply(200, { hello: 'world' });
+
+      var chunks = [];
+
+      var bodyPipe = function() {
+        var s = new stream.Writable();
+
+        s._write = function(chunk, encoding, callback) {
+          chunks.push(chunk);
+
+          callback();
+        };
+
+        return s;
+      };
+
+      var opts = {
+        path: '/get',
+        pipe: bodyPipe,
+      };
+
+      this.client._get(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+
+        Buffer.concat(chunks).toString().should.eql('{"hello":"world"}');
+
+        done();
+      });
+    });
+
+    it('should require stream.Writable for pipe', function(done) {
+      var opts = {
+        path: '/get',
+        pipe: true,
+      };
+
+      this.client._get(opts, function(err, res) {
+        should.exist(err);
+        err.message.should.equal('testclient: pipe must be a writable stream');
+
+        should.not.exist(res);
+
+        done();
+      });
+    });
+
+    it('should error error on function pipe', function(done) {
+      var bodyPipe = function() { throw new Error('pipe'); };
+
+      var opts = {
+        path: '/get',
+        pipe: bodyPipe,
+      };
+
+      this.client._get(opts, function(err, res) {
+        should.exist(err);
+        err.message.should.equal('testclient: pipe');
+
+        should.not.exist(res);
 
         done();
       });
@@ -979,6 +1087,23 @@ describe('Client', function() {
         should.not.exist(err);
 
         should.exist(res);
+
+        done();
+      });
+    });
+
+    it('should throw error for unknown content-type', function(done) {
+      var opts = {
+        path: '/patch',
+        headers: { 'content-type': 'x' },
+        body: { hello: 'world' },
+      };
+
+      this.client._patch(opts, function(err, res) {
+        should.exist(err);
+        err.message.should.equal('testclient: type is unknown: x');
+
+        should.not.exist(res);
 
         done();
       });

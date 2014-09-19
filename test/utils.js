@@ -20,6 +20,10 @@ describe('utils', function() {
       utils.isEmpty([]).should.equal(true);
       utils.isEmpty(true).should.equal(true);
       utils.isEmpty({}).should.equal(true);
+
+      Object.prototype.jerk = true;
+      utils.isEmpty({}).should.equal(true);
+      delete Object.prototype.jerk;
     });
 
     it('should handle non-empty values', function() {
