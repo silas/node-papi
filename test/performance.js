@@ -14,7 +14,7 @@ var util = require('util');
 
 var papi = require('../lib');
 
-var runner = process.env.CI ? describe : describe.skip;
+var runner = process.env.BENCHMARK ? describe : describe.skip;
 
 /**
  * Clients
