@@ -43,10 +43,13 @@ describe('Client', function() {
 
       var baseUrl = client._opts.baseUrl;
 
-      baseUrl.protocol.should.eql('http:');
-      baseUrl.host.should.eql('example.org');
-      baseUrl.path.should.eql('');
-      baseUrl.pathname.should.eql('');
+      should(baseUrl).eql({
+        auth: null,
+        hostname: 'example.org',
+        path: '',
+        port: null,
+        protocol: 'http:'
+      });
     });
 
     it('should require baseUrl', function() {
