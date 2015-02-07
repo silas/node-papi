@@ -11,7 +11,12 @@ This is a module for building HTTP API clients.
 <a name="papi-request"/>
 ### papi.request(request, [callback...], callback)
 
-See [client request](#client-request) below.
+See [client request](#client-request) for full options list, with the exception
+that `path` is replaced with `url`.
+
+Request
+
+ * url (String): request url (ex: `http://example.org/`)
 
 There are also `get`, `head`, `post`, `put`, `delete` (`del`), `patch`, and
 `options` shortcuts with the same method signature as `request`.
