@@ -18,6 +18,7 @@
   },
   "scripts": {
     "cover": "istanbul cover _mocha -- --recursive && open coverage/lcov-report/index.html",
+    "bench": "BENCHMARK=true mocha test/benchmark.js",
     "test": "jshint lib test && jscs lib test && istanbul cover _mocha -- --recursive --check-leaks && istanbul check-coverage --statements 98 --functions 100 --branches 97 --lines 99"
   },
   "repository": {
