@@ -16,6 +16,20 @@ See [client request](#client-request) below.
 There are also `get`, `head`, `post`, `put`, `delete` (`del`), `patch`, and
 `options` shortcuts with the same method signature as `request`.
 
+Usage
+
+``` javascript
+var papi = require('papi');
+
+papi.get('https://api.github.com/users/silas/gists', function(err, res) {
+  if (err) throw err;
+
+  res.body.forEach(function(gist) {
+    console.log(gist.url);
+  });
+});
+```
+
 <a name="papi-client"/>
 ### papi.Client([options])
 
