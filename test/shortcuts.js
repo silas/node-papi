@@ -57,12 +57,13 @@ describe('Shortcuts', function() {
 
   it('should make request', function(done) {
     this.nock
-      .get('/test')
+      .get('/test/world')
       .reply(200);
 
     var opts = {
       method: 'get',
-      url: this.baseUrl + '/test',
+      url: this.baseUrl + '/test/{hello}',
+      params: { hello: 'world' },
     };
 
     papi.request(opts, function(err, res) {
