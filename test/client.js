@@ -15,6 +15,7 @@ var should = require('should');
 var sinon = require('sinon');
 var stream = require('stream');
 
+var meta = require('../package.json');
 var papi = require('../lib');
 
 /**
@@ -504,6 +505,16 @@ describe('Client', function() {
 
           req.abort = function() {};
 
+          req.getHeader = function(name) {
+            name = name.toLowerCase();
+            return opts.headers[name];
+          };
+
+          req.setHeader = function(name, value) {
+            name = name.toLowerCase();
+            opts.headers[name] = value;
+          };
+
           req.setTimeout = function(timeout) {
             self.timeout = timeout;
           };
@@ -539,7 +550,7 @@ describe('Client', function() {
 
       process.nextTick(function() {
         should(self.http).eql({
-          headers: {},
+          headers: { 'user-agent': 'papi/' + meta.version },
           hostname: hostname,
           method: method,
           path: '/one',
@@ -567,7 +578,7 @@ describe('Client', function() {
       process.nextTick(function() {
         should(self.http).eql({
           auth: auth,
-          headers: {},
+          headers: { 'user-agent': 'papi/' + meta.version },
           hostname: hostname,
           method: method,
           path: '/one/two',
@@ -593,7 +604,7 @@ describe('Client', function() {
 
       process.nextTick(function() {
         should(self.https).eql({
-          headers: {},
+          headers: { 'user-agent': 'papi/' + meta.version },
           hostname: hostname,
           method: method,
           path: '/one',
@@ -623,7 +634,7 @@ describe('Client', function() {
       process.nextTick(function() {
         should(self.https).eql({
           auth: auth,
-          headers: {},
+          headers: { 'user-agent': 'papi/' + meta.version },
           hostname: hostname,
           method: method,
           path: '/one/two',
@@ -826,6 +837,61 @@ describe('Client', function() {
 
         should.exist(res);
         res.statusCode.should.eql(200);
+
+        done();
+      });
+    });
+
+    it('should set default user-agent', function(done) {
+      this.nock
+        .get('/get')
+        .matchHeader('user-agent', 'papi/' + meta.version)
+        .reply(200);
+
+      this.client._get('/get', function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+
+        done();
+      });
+    });
+
+    it('should use custom user-agent', function(done) {
+      this.nock
+        .get('/get')
+        .matchHeader('user-agent', 'foo')
+        .reply(200);
+
+      var opts = {
+        path: '/get',
+        headers: { 'User-Agent': 'foo' },
+      };
+
+      this.client._get(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
+
+        done();
+      });
+    });
+
+    it('should use null user-agent', function(done) {
+      this.nock
+        .get('/get')
+        .matchHeader('user-agent', null)
+        .reply(200);
+
+      var opts = {
+        path: '/get',
+        headers: { 'user-agent': null },
+      };
+
+      this.client._get(opts, function(err, res) {
+        should.not.exist(err);
+
+        should.exist(res);
 
         done();
       });
