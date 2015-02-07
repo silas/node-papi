@@ -51,19 +51,31 @@ describe('Client', function() {
     it('should require baseUrl', function() {
       (function() {
         papi.Client();
-      }).should.throw('baseUrl required');
+      }).should.throw(Error, {
+        message: 'baseUrl required',
+        isPapi: true,
+        isValidation: true,
+      });
     });
 
     it('should require baseUrl be a string', function() {
       (function() {
         papi.Client({ baseUrl: 123 });
-      }).should.throw('baseUrl must be a string: 123');
+      }).should.throw(Error, {
+        message: 'baseUrl must be a string: 123',
+        isPapi: true,
+        isValidation: true,
+      });
     });
 
     it('should error on trailing slash', function() {
       (function() {
         papi.Client(BASE_URL + '/nope/');
-      }).should.throw('baseUrl must not end with a forward slash');
+      }).should.throw(Error, {
+        message: 'baseUrl must not end with a forward slash',
+        isPapi: true,
+        isValidation: true,
+      });
     });
   });
 
@@ -142,17 +154,29 @@ describe('Client', function() {
     it('should require an event name', function() {
       (function() {
         make()._ext();
-      }).should.throw('extension eventName required');
+      }).should.throw(Error, {
+        message: 'extension eventName required',
+        isPapi: true,
+        isValidation: true,
+      });
 
       (function() {
         make()._ext(true);
-      }).should.throw('extension eventName required');
+      }).should.throw(Error, {
+        message: 'extension eventName required',
+        isPapi: true,
+        isValidation: true,
+      });
     });
 
     it('should require callback', function() {
       (function() {
         make()._ext('test');
-      }).should.throw('extension callback required');
+      }).should.throw(Error, {
+        message: 'extension callback required',
+        isPapi: true,
+        isValidation: true,
+      });
     });
   });
 
@@ -181,7 +205,11 @@ describe('Client', function() {
     it('should require plugin option', function() {
       (function() {
         make()._plugin();
-      }).should.throw('plugin required');
+      }).should.throw(Error, {
+        message: 'plugin required',
+        isPapi: true,
+        isValidation: true,
+      });
     });
 
     it('should require register be a function', function() {
@@ -191,7 +219,11 @@ describe('Client', function() {
 
       (function() {
         make()._plugin(plugin);
-      }).should.throw('plugin must have register function');
+      }).should.throw(Error, {
+        message: 'plugin must have register function',
+        isPapi: true,
+        isValidation: true,
+      });
     });
 
     it('should require attributes', function() {
@@ -201,7 +233,11 @@ describe('Client', function() {
 
       (function() {
         make()._plugin(plugin);
-      }).should.throw('plugin attributes required');
+      }).should.throw(Error, {
+        message: 'plugin attributes required',
+        isPapi: true,
+        isValidation: true,
+      });
     });
 
     it('should require attributes name', function() {
@@ -213,7 +249,11 @@ describe('Client', function() {
 
       (function() {
         make()._plugin(plugin);
-      }).should.throw('plugin attributes name required');
+      }).should.throw(Error, {
+        message: 'plugin attributes name required',
+        isPapi: true,
+        isValidation: true,
+      });
     });
 
     it('should require attributes version', function() {
@@ -227,7 +267,11 @@ describe('Client', function() {
 
       (function() {
         make()._plugin(plugin);
-      }).should.throw('plugin attributes version required');
+      }).should.throw(Error, {
+        message: 'plugin attributes version required',
+        isPapi: true,
+        isValidation: true,
+      });
     });
 
     it('should set default options', function(done) {
@@ -267,7 +311,11 @@ describe('Client', function() {
     it('should throw on unknown encoder', function() {
       (function() {
         make()._encode('fail');
-      }).should.throw('unknown encoder: fail');
+      }).should.throw(Error, {
+        message: 'unknown encoder: fail',
+        isPapi: true,
+        isCodec: true,
+      });
     });
 
     it('should throw on invalid content', function() {
@@ -276,8 +324,12 @@ describe('Client', function() {
 
       (function() {
         make()._encode('application/json', data);
-      }).should.throw('encode (application/json) failed: ' +
-        'Converting circular structure to JSON');
+      }).should.throw(Error, {
+        message: 'encode (application/json) failed: ' +
+                 'Converting circular structure to JSON',
+        isPapi: true,
+        isCodec: true,
+      });
     });
   });
 
@@ -285,13 +337,21 @@ describe('Client', function() {
     it('should throw on unknown decoder', function() {
       (function() {
         make()._decode('fail');
-      }).should.throw('unknown decoder: fail');
+      }).should.throw(Error, {
+        message: 'unknown decoder: fail',
+        isPapi: true,
+        isCodec: true,
+      });
     });
 
     it('should throw on invalid content', function() {
       (function() {
         make()._decode('application/json', '<html>');
-      }).should.throw('decode (application/json) failed: Unexpected token <');
+      }).should.throw(Error, {
+        message: 'decode (application/json) failed: Unexpected token <',
+        isPapi: true,
+        isCodec: true,
+      });
     });
   });
 
@@ -340,8 +400,9 @@ describe('Client', function() {
     it('should not crash with null opts', function(done) {
       this.client._request(null, function(err) {
         should.exist(err);
-
-        err.message.should.eql('testclient: path required');
+        err.should.have.property('message', 'testclient: path required');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
 
         done();
       });
@@ -350,8 +411,9 @@ describe('Client', function() {
     it('should not crash helper methods with null opts', function(done) {
       this.client._get(null, function(err) {
         should.exist(err);
-
-        err.message.should.eql('testclient: path required');
+        err.should.have.property('message', 'testclient: path required');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
 
         done();
       });
@@ -360,8 +422,9 @@ describe('Client', function() {
     it('should emit error when no callback provided', function(done) {
       this.client.on('error', function(err) {
         should.exist(err);
-
-        err.message.should.eql('testclient: callback required');
+        err.should.have.property('message', 'testclient: callback required');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
 
         done();
       });
@@ -376,8 +439,9 @@ describe('Client', function() {
 
       this.client._get(req, function(err) {
         should.exist(err);
-
-        err.message.should.eql('testclient: missing param: two');
+        err.should.have.property('message', 'testclient: missing param: two');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
 
         done();
       });
@@ -397,9 +461,10 @@ describe('Client', function() {
 
       this.client._get(req, function(err) {
         should.exist(err);
-
-        err.message.should.eql('testclient: encode (' + mime + ') ' +
-          'failed: something went wrong');
+        err.should.have.property('message', 'testclient: encode (' + mime +
+          ') ' + 'failed: something went wrong');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isCodec', true);
 
         done();
       });
@@ -417,9 +482,10 @@ describe('Client', function() {
 
       this.client._post(req, function(err) {
         should.exist(err);
-
-        err.message.should.eql('testclient: encode (application/json) ' +
-          'failed: Converting circular structure to JSON');
+        err.should.have.property('message', 'testclient: encode ' +
+          '(application/json) failed: Converting circular structure to JSON');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isCodec', true);
 
         done();
       });
@@ -487,7 +553,7 @@ describe('Client', function() {
 
       var protocol = 'http:';
       var auth = 'user:pass';
-      var port = 8000;
+      var port = '8000';
       var hostname = 'example.org';
       var method = 'GET';
 
@@ -543,7 +609,7 @@ describe('Client', function() {
 
       var protocol = 'https:';
       var auth = 'user:pass';
-      var port = 4433;
+      var port = '4433';
       var hostname = 'example.org';
       var method = 'GET';
 
@@ -691,9 +757,10 @@ describe('Client', function() {
 
       this.client._get('/get', function(err, res) {
         should.exist(err);
-
-        err.message.should.eql('testclient: decode (application/json) ' +
-          'failed: Unexpected token <');
+        err.should.have.property('message', 'testclient: decode ' +
+          '(application/json) failed: Unexpected token <');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isCodec', true);
 
         res.body.toString().should.eql('<html>');
 
@@ -858,7 +925,8 @@ describe('Client', function() {
 
       this.client._post(opts, function(err, res) {
         should.exist(err);
-        err.message.should.equal('testclient: body');
+        err.should.have.property('message', 'testclient: body');
+        err.should.not.have.property('isPapi');
 
         should.not.exist(res);
 
@@ -964,7 +1032,10 @@ describe('Client', function() {
 
       this.client._get(opts, function(err, res) {
         should.exist(err);
-        err.message.should.equal('testclient: pipe must be a writable stream');
+        err.should.have.property('message', 'testclient: pipe must be a ' +
+          'writable stream');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
 
         should.not.exist(res);
 
@@ -982,7 +1053,8 @@ describe('Client', function() {
 
       this.client._get(opts, function(err, res) {
         should.exist(err);
-        err.message.should.equal('testclient: pipe');
+        err.should.have.property('message', 'testclient: pipe');
+        err.should.not.have.property('isPapi');
 
         should.not.exist(res);
 
@@ -1053,7 +1125,9 @@ describe('Client', function() {
 
       this.client._patch(opts, function(err, res) {
         should.exist(err);
-        err.message.should.eql('testclient: type required');
+        err.should.have.property('message', 'testclient: type required');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
 
         should.not.exist(res);
 
@@ -1064,7 +1138,9 @@ describe('Client', function() {
     it('should require path', function(done) {
       this.client._request({}, function(err, res) {
         should.exist(err);
-        err.message.should.eql('testclient: path required');
+        err.should.have.property('message', 'testclient: path required');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
 
         should.not.exist(res);
 
@@ -1101,7 +1177,9 @@ describe('Client', function() {
 
       this.client._patch(opts, function(err, res) {
         should.exist(err);
-        err.message.should.equal('testclient: type is unknown: x');
+        err.should.have.property('message', 'testclient: type is unknown: x');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isCodec', true);
 
         should.not.exist(res);
 
@@ -1116,7 +1194,9 @@ describe('Client', function() {
 
       this.client._post('/post', function(err, res) {
         should.exist(err);
-        err.message.should.eql('testclient: bad request');
+        err.should.have.property('message', 'testclient: bad request');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isResponse', true);
 
         should.exist(res);
         res.statusCode.should.eql(400);
@@ -1132,7 +1212,9 @@ describe('Client', function() {
 
       this.client._post('/post', function(err, res) {
         should.exist(err);
-        err.message.should.eql('testclient: validation error');
+        err.should.have.property('message', 'testclient: validation error');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isResponse', true);
 
         should.exist(res);
         res.statusCode.should.eql(400);
@@ -1148,7 +1230,9 @@ describe('Client', function() {
 
       this.client._post('/post', function(err, res) {
         should.exist(err);
-        err.message.should.eql('testclient: request failed: 499');
+        err.should.have.property('message', 'testclient: request failed: 499');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isResponse', true);
 
         should.exist(res);
         res.statusCode.should.eql(499);
@@ -1325,8 +1409,10 @@ describe('Client', function() {
 
       this.client._post(req, function(err) {
         should.exist(err);
-
-        err.message.should.eql('testclient: request is not retryable');
+        err.should.have.property('message', 'testclient: request is not ' +
+          'retryable');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
 
         done();
       });
@@ -1391,8 +1477,10 @@ describe('Client', function() {
 
       this.client._get(req, function(err) {
         should.exist(err);
-
-        err.message.should.eql('testclient: request is not retryable');
+        err.should.have.property('message', 'testclient: request is not ' +
+          'retryable');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
 
         done();
       });
@@ -1494,8 +1582,10 @@ describe('Client', function() {
 
       this.client._get(opts, function(err) {
         should.exist(err);
-
-        err.message.should.eql('testclient: request timed out (10ms)');
+        err.should.have.property('message', 'testclient: request timed out ' +
+          '(10ms)');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isTimeout', true);
 
         done();
       });
