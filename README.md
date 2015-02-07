@@ -8,6 +8,15 @@ This is a module for building HTTP API clients.
 
 ## Documentation
 
+<a name="papi-request"/>
+### papi.request(request, [callback...], callback)
+
+See [client request](#client-request) below.
+
+There are also `get`, `head`, `post`, `put`, `delete` (`del`), `patch`, and
+`options` shortcuts with the same method signature as `request`.
+
+<a name="papi-client"/>
 ### papi.Client([options])
 
 Initialize a new client.
@@ -34,6 +43,7 @@ var client = new papi.Client({
 });
 ```
 
+<a name="client-request"/>
 ### client.\_request(request, [callback...], callback)
 
 Make an HTTP request.
@@ -56,8 +66,8 @@ Request
  * timeout (Number, optional): number of milliseconds before request is aborted
  * tags (String[], optional): tags included in `_log` calls
 
-There are also `_get`, `_head`, `_post`, `_put`, `_delete`, `_patch`, and
-`_options` shortcuts with the same method signature as `_request`.
+There are also `_get`, `_head`, `_post`, `_put`, `_delete` (`_del`), `_patch`,
+and `_options` shortcuts with the same method signature as `_request`.
 
 Usage
 

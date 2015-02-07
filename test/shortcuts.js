@@ -29,6 +29,12 @@ describe('Shortcuts', function() {
     this.nock = nock(this.baseUrl);
   });
 
+  it('should throw when no callback provided', function() {
+    (function() {
+      papi.request();
+    }).should.throw('no callback: url required');
+  });
+
   it('should require url', function(done) {
     papi.request(null, function(err) {
       should.exist(err);
@@ -82,6 +88,41 @@ describe('Shortcuts', function() {
     });
   });
 
+  it('should make request with middleware', function(done) {
+    this.nock
+      .get('/test')
+      .reply(200);
+
+    var opts = {
+      method: 'get',
+      url: this.baseUrl + '/test',
+    };
+
+    var ok = {};
+
+    var one = function(ctx, next) {
+      ok.one = true;
+
+      next();
+    };
+
+    var two = function(ctx, next) {
+      ok.two = true;
+
+      next();
+    };
+
+    papi.request(opts, one, two, function(err, res) {
+      should.not.exist(err);
+
+      res.statusCode.should.eql(200);
+
+      ok.should.eql({ one: true, two: true });
+
+      done();
+    });
+  });
+
   it('should make get request', function(done) {
     this.nock
       .get('/get')
@@ -111,6 +152,36 @@ describe('Shortcuts', function() {
       should.exist(err);
 
       err.message.should.eql('url required');
+
+      done();
+    });
+  });
+
+  it('should use middleware in method calls', function(done) {
+    this.nock
+      .get('/test')
+      .reply(200);
+
+    var ok = {};
+
+    var one = function(ctx, next) {
+      ok.one = true;
+
+      next();
+    };
+
+    var two = function(ctx, next) {
+      ok.two = true;
+
+      next();
+    };
+
+    papi.get(this.baseUrl + '/test', one, two, function(err, res) {
+      should.not.exist(err);
+
+      res.statusCode.should.eql(200);
+
+      ok.should.eql({ one: true, two: true });
 
       done();
     });
