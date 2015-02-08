@@ -8,37 +8,16 @@ This is a module for building HTTP API clients.
 
 ## Documentation
 
-<a name="papi-request"/>
-### papi.request(request, [callback...], callback)
+ * [Client](#client)
+ * [Shortcuts](#shortcuts)
 
-See [client request](#client-request) for full options list, with the exception
-that `path` is replaced with `url`.
-
-Request
-
- * url (String): request url (ex: `http://example.org/`)
-
-There are also `get`, `head`, `post`, `put`, `delete` (`del`), `patch`, and
-`options` shortcuts with the same method signature as `request`.
-
-Usage
-
-``` javascript
-var papi = require('papi');
-
-papi.get('https://api.github.com/users/silas/gists', function(err, res) {
-  if (err) throw err;
-
-  res.body.forEach(function(gist) {
-    console.log(gist.url);
-  });
-});
-```
-
-<a name="papi-client"/>
+<a name="client"/>
 ### papi.Client([options])
 
 Initialize a new client.
+
+Your client should inherit the prototype methods from this constructor and call
+it in your client's constructor.
 
 Options
 
@@ -54,18 +33,27 @@ Usage
 
 ``` javascript
 var papi = require('papi');
+var util = require('util');
 
-var client = new papi.Client({
-  baseUrl: 'https://api.github.com',
-  headers: { 'user-agent': 'PapiGitHub/0.1.0' },
-  timeout: 5 * 1000,
-});
+function GitHub(opts) {
+  opts = opts || {};
+  opts.baseUrl = 'https://api.github.com';
+  opts.header = { accept: 'application/vnd.github.v3+json' };
+  opts.timeout = 15 * 1000;
+
+  papi.Client.call(this, opts);
+}
+
+util.inherits(GitHub, papi.Client);
 ```
 
 <a name="client-request"/>
 ### client.\_request(request, [callback...], callback)
 
 Make an HTTP request.
+
+Your client should use this or the shortcut methods listed below to execute
+HTTP requests in your client methods.
 
 Arguments
 
@@ -91,21 +79,18 @@ and `_options` shortcuts with the same method signature as `_request`.
 Usage
 
 ``` javascript
-var opts = {
-  path: '/users/{username}/gists',
-  params: { username: 'silas' },
+GitHub.prototype.gists = function(username, callback) {
+  var opts = {
+    path: '/users/{username}/gists',
+    params: { username: username },
+  };
+
+  this._get(opts, function(err, res) {
+    if (err) return callback(err);
+
+    callback(null, res.body);
+  });
 };
-
-client._get(opts, function(err, res) {
-  if (err) {
-    console.log('error', err.message);
-  }
-
-  if (res) {
-    console.log('statusCode', res.statusCode);
-    console.log('body', res.body);
-  }
-});
 ```
 
 Result
@@ -195,6 +180,36 @@ Usage
 ``` javascript
 client._plugin(require('papi-retry'));
 ```
+
+<a name="shortcuts"/>
+### papi.request(request, [callback...], callback)
+
+Shortcuts for making one-off requests.
+
+See [client request](#client-request) for full options list, with the exception
+that `path` is replaced with `url`.
+
+Request
+
+ * url (String): request url (ex: `http://example.org/`)
+
+There are also `get`, `head`, `post`, `put`, `delete` (`del`), `patch`, and
+`options` shortcuts with the same method signature as `request`.
+
+Usage
+
+``` javascript
+var papi = require('papi');
+
+papi.get('https://api.github.com/users/silas/gists', function(err, res) {
+  if (err) throw err;
+
+  res.body.forEach(function(gist) {
+    console.log(gist.url);
+  });
+});
+```
+
 
 ## Example
 
