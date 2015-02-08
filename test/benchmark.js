@@ -182,13 +182,20 @@ runner('Performance', function() {
       var data = {};
 
       console.log();
-      console.log('    Name\t\tRate (req/s)\tDuration (ms)\tCount');
+      console.log('    Name\t\tRate (req/s)\tDuration (ms)\tCount\tSlower');
+
+      var http = results[0];
 
       results.forEach(function(r) {
         data[r.name.toLowerCase()] = r;
 
-        console.log('    ' + r.name + '\t\t' + r.perSecond + '\t\t' +
-          r.duration + '\t\t' + r.count);
+        console.log(util.format('    %s\t\t%s\t\t%s\t\t%s\t%sx',
+          r.name,
+          r.perSecond,
+          r.duration,
+          r.count,
+          (r.duration / http.duration).toFixed(1)
+        ));
       });
 
       console.log();
