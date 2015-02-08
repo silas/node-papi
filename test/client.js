@@ -509,13 +509,15 @@ describe('Client', function() {
           req.abort = function() {};
 
           req.getHeader = function(name) {
-            name = name.toLowerCase();
-            return opts.headers[name];
+            return opts.headers[name.toLowerCase()];
           };
 
           req.setHeader = function(name, value) {
-            name = name.toLowerCase();
-            opts.headers[name] = value;
+            opts.headers[name.toLowerCase()] = value;
+          };
+
+          req.removeHeader = function(name) {
+            delete opts.headers[name.toLowerCase()];
           };
 
           req.setTimeout = function(timeout) {
@@ -574,14 +576,17 @@ describe('Client', function() {
       var baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
         '/one';
 
-      var client = papi.Client({ baseUrl: baseUrl });
+      var client = papi.Client({
+        baseUrl: baseUrl,
+        headers: { 'user-agent': null },
+      });
 
       client._get('/two', noop);
 
       process.nextTick(function() {
         should(self.http).eql({
           auth: auth,
-          headers: { 'user-agent': 'papi/' + meta.version },
+          headers: {},
           hostname: hostname,
           method: method,
           path: '/one/two',
@@ -869,26 +874,6 @@ describe('Client', function() {
       var opts = {
         path: '/get',
         headers: { 'User-Agent': 'foo' },
-      };
-
-      this.client._get(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
-    });
-
-    it('should use null user-agent', function(done) {
-      this.nock
-        .get('/get')
-        .matchHeader('user-agent', null)
-        .reply(200);
-
-      var opts = {
-        path: '/get',
-        headers: { 'user-agent': null },
       };
 
       this.client._get(opts, function(err, res) {
