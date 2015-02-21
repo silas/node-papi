@@ -10,6 +10,7 @@ var debug = require('debug')('papi');
 var events = require('events');
 var http = require('http');
 var https = require('https');
+var lodash = require('lodash');
 var nock = require('nock');
 var should = require('should');
 var sinon = require('sinon');
@@ -25,8 +26,6 @@ var papi = require('../lib');
 var FORM = 'application/x-www-form-urlencoded';
 var CHARSET = 'charset=utf-8';
 var BASE_URL = 'http://example.org';
-
-function noop() {}
 
 function make() {
   return papi.Client(BASE_URL);
@@ -144,15 +143,15 @@ describe('Client', function() {
 
       var name = 'test';
 
-      client._ext(name, noop);
+      client._ext(name, lodash.noop);
 
       client._exts.should.have.keys(name);
       client._exts[name].should.be.instanceof(Array);
-      client._exts[name].should.eql([noop]);
+      client._exts[name].should.eql([lodash.noop]);
 
-      client._ext(name, noop);
+      client._ext(name, lodash.noop);
 
-      client._exts[name].should.eql([noop, noop]);
+      client._exts[name].should.eql([lodash.noop, lodash.noop]);
     });
 
     it('should require an event name', function() {
@@ -363,12 +362,12 @@ describe('Client', function() {
     it('should push method item', function() {
       var request = {
         _stack: [],
-        opts: { exts: { test: noop } },
+        opts: { exts: { test: lodash.noop } },
       };
 
       make().__push(request, 'test');
 
-      request._stack.should.eql([noop]);
+      request._stack.should.eql([lodash.noop]);
     });
 
     it('should push client and method items', function() {
@@ -502,11 +501,24 @@ describe('Client', function() {
 
       self.sinon = sinon.sandbox.create();
 
+      self.http = {};
+      self.https = {};
+
       function request(type) {
         return function(opts) {
-          var req = new events.EventEmitter();
+          var req = self[type].req = new events.EventEmitter();
+          var res = self[type].res = new events.EventEmitter();
 
-          req.abort = function() {};
+          res.statusCode = 200;
+          res.headers = {};
+          res.connection = {
+            remoteAddress: '127.0.0.1',
+            remotePort: 80,
+          };
+
+          req.abort = function() {
+            opts._aborted = true;
+          };
 
           req.getHeader = function(name) {
             return opts.headers[name.toLowerCase()];
@@ -525,7 +537,9 @@ describe('Client', function() {
           };
 
           req.end = function() {
-            self[type] = opts;
+            self[type].opts = opts;
+
+            req.emit('response', res);
           };
 
           return req;
@@ -551,10 +565,10 @@ describe('Client', function() {
 
       var client = papi.Client({ baseUrl: baseUrl, timeout: 1000 });
 
-      client._get('/one', noop);
+      client._get('/one', lodash.noop);
 
       process.nextTick(function() {
-        should(self.http).eql({
+        should(self.http.opts).eql({
           headers: { 'user-agent': 'papi/' + meta.version },
           hostname: hostname,
           method: method,
@@ -581,10 +595,10 @@ describe('Client', function() {
         headers: { 'user-agent': null },
       });
 
-      client._get('/two', noop);
+      client._get('/two', lodash.noop);
 
       process.nextTick(function() {
-        should(self.http).eql({
+        should(self.http.opts).eql({
           auth: auth,
           headers: {},
           hostname: hostname,
@@ -608,10 +622,10 @@ describe('Client', function() {
 
       var client = papi.Client({ baseUrl: baseUrl });
 
-      client._get('/one', noop);
+      client._get('/one', lodash.noop);
 
       process.nextTick(function() {
-        should(self.https).eql({
+        should(self.https.opts).eql({
           headers: { 'user-agent': 'papi/' + meta.version },
           hostname: hostname,
           method: method,
@@ -637,10 +651,10 @@ describe('Client', function() {
 
       var client = papi.Client({ baseUrl: baseUrl });
 
-      client._get('/two', noop);
+      client._get('/two', lodash.noop);
 
       process.nextTick(function() {
-        should(self.https).eql({
+        should(self.https.opts).eql({
           auth: auth,
           headers: { 'user-agent': 'papi/' + meta.version },
           hostname: hostname,
@@ -650,6 +664,74 @@ describe('Client', function() {
         });
 
         done();
+      });
+    });
+
+    it('should handle multiple events with abort', function(done) {
+      var self = this;
+
+      var client = papi.Client({ baseUrl: 'http://example.org' });
+      var called = 0;
+      var errors = 0;
+
+      var opts = {
+        path: '/one',
+        ctx: new events.EventEmitter(),
+      };
+
+      client._get(opts, function() {
+        if (!called) {
+          self.http.req.on('error', function() {
+            if (!errors) {
+              called.should.equal(1);
+              done();
+            }
+            errors++;
+          });
+        }
+
+        called++;
+
+        for (var i = 0; i < 2; i++) {
+          self.http.req.emit('error', new Error('req error'));
+          self.http.req.emit('timeout', new Error('req timeout'));
+          self.http.res.emit('end');
+        }
+      });
+
+      opts.ctx.emit('done');
+    });
+
+    it('should handle multiple events with timeout', function(done) {
+      var self = this;
+
+      var client = papi.Client({ baseUrl: 'http://example.org' });
+      var called = 0;
+      var errors = 0;
+
+      var opts = {
+        path: '/one',
+        timeout: 10,
+      };
+
+      client._get(opts, function() {
+        if (!called) {
+          self.http.req.on('error', function() {
+            if (!errors) {
+              called.should.equal(1);
+              done();
+            }
+            errors++;
+          });
+        }
+
+        called++;
+
+        for (var i = 0; i < 2; i++) {
+          self.http.req.emit('error', new Error('req error'));
+          self.http.req.emit('timeout', new Error('req timeout'));
+          self.http.res.emit('end');
+        }
       });
     });
   });
