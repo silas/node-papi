@@ -58,7 +58,7 @@ HTTP requests in your client methods.
 Arguments
 
  * request (Object): request options
- * callback... (Function&lt;ctx, next&gt;, optional): middleware functions that can mutate `ctx.err` or `ctx.res`. Call `next` without arguments to continue execution, `next(err)` to break with an error, or `next(false, arguments...)` to trigger the final callback with the given arguments.
+ * callback... (Function&lt;request, next&gt;, optional): middleware functions that can mutate `request.err` or `request.res`. Call `next` without arguments to continue execution, `next(err)` to break with an error, or `next(false, arguments...)` to trigger the final callback with the given arguments.
  * callback (Function&lt;err, res&gt;): request callback function.
 
 Request
@@ -70,6 +70,7 @@ Request
  * query (Object&lt;String, String|String[]&gt;, optional): query parameters
  * body (Object|Buffer|Readable, optional): request body
  * type (String, optional, supports: form, json, text): request body encoding type
+ * ctx (EventEmitter, optional): emitter that can emit 'done' to abort request
  * timeout (Number, optional): number of milliseconds before request is aborted
  * tags (String[], optional): tags included in `_log` calls
 
@@ -141,19 +142,19 @@ Arguments
 Usage
 
 ``` javascript
-client._ext('onRequest', function(ctx, next) {
-  console.log('request', ctx.opts.method + ' ' + ctx.opts.path);
+client._ext('onRequest', function(request, next) {
+  console.log('request', request.opts.method + ' ' + request.opts.path);
 
-  ctx.start = new Date();
+  request.start = new Date();
 
   next();
 });
 
-client._ext('onResponse', function(ctx, next) {
-  var duration = new Date() - ctx.start;
-  var statusCode = ctx.res ? ctx.res.statusCode : 'none';
+client._ext('onResponse', function(request, next) {
+  var duration = new Date() - request.start;
+  var statusCode = request.res ? request.res.statusCode : 'none';
 
-  console.log('response', ctx.opts.method, ctx.opts.path, statusCode, duration + 'ms');
+  console.log('response', request.opts.method, request.opts.path, statusCode, duration + 'ms');
 
   next();
 });

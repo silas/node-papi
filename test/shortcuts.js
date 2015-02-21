@@ -101,13 +101,13 @@ describe('Shortcuts', function() {
 
     var ok = {};
 
-    var one = function(ctx, next) {
+    var one = function(request, next) {
       ok.one = true;
 
       next();
     };
 
-    var two = function(ctx, next) {
+    var two = function(request, next) {
       ok.two = true;
 
       next();
@@ -165,13 +165,13 @@ describe('Shortcuts', function() {
 
     var ok = {};
 
-    var one = function(ctx, next) {
+    var one = function(request, next) {
       ok.one = true;
 
       next();
     };
 
-    var two = function(ctx, next) {
+    var two = function(request, next) {
       ok.two = true;
 
       next();

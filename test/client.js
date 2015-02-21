@@ -361,14 +361,14 @@ describe('Client', function() {
 
   describe('push', function() {
     it('should push method item', function() {
-      var ctx = {
+      var request = {
         _stack: [],
         opts: { exts: { test: noop } },
       };
 
-      make().__push(ctx, 'test');
+      make().__push(request, 'test');
 
-      ctx._stack.should.eql([noop]);
+      request._stack.should.eql([noop]);
     });
 
     it('should push client and method items', function() {
@@ -379,16 +379,16 @@ describe('Client', function() {
 
       client._ext('test', one);
 
-      var ctx = {
+      var request = {
         _stack: [],
         opts: { exts: {} },
       };
 
-      ctx.opts.exts.test = [two];
+      request.opts.exts.test = [two];
 
-      client.__push(ctx, 'test');
+      client.__push(request, 'test');
 
-      ctx._stack.should.eql([one, two]);
+      request._stack.should.eql([one, two]);
     });
   });
 
@@ -1363,18 +1363,18 @@ describe('Client', function() {
         .get(path)
         .reply(statusCode, { hello: 'world' });
 
-      self.client._ext('onRequest', function(ctx, next) {
-        should.exist(ctx);
+      self.client._ext('onRequest', function(request, next) {
+        should.exist(request);
 
         called.push('onRequest');
 
         next();
       });
 
-      self.client._ext('onResponse', function(ctx, next) {
-        ctx.should.have.properties('opts', 'state');
+      self.client._ext('onResponse', function(request, next) {
+        request.should.have.properties('opts', 'state');
 
-        ctx.opts.should.eql({
+        request.opts.should.eql({
           headers: {},
           query: {},
           params: {},
@@ -1383,17 +1383,17 @@ describe('Client', function() {
           tags: ['testclient'],
         });
 
-        ctx.req.method.should.eql('GET');
-        ctx.req.headers.should.eql({ key: 'value' });
+        request.req.method.should.eql('GET');
+        request.req.headers.should.eql({ key: 'value' });
 
-        should.not.exist(ctx.err);
-        should.exist(ctx.res);
+        should.not.exist(request.err);
+        should.exist(request.res);
 
-        ctx.res.should.have.properties('statusCode', 'headers', 'body');
+        request.res.should.have.properties('statusCode', 'headers', 'body');
 
-        ctx.res.statusCode.should.eql(statusCode);
-        ctx.res.headers.should.eql({ 'content-type': 'application/json' });
-        ctx.res.body.should.eql({ hello: 'world' });
+        request.res.statusCode.should.eql(statusCode);
+        request.res.headers.should.eql({ 'content-type': 'application/json' });
+        request.res.body.should.eql({ hello: 'world' });
 
         called.push('onResponse');
 
@@ -1422,12 +1422,12 @@ describe('Client', function() {
 
       var responses = [];
 
-      this.client._ext('onResponse', function(ctx, next) {
-        responses.push(ctx.res.statusCode);
+      this.client._ext('onResponse', function(request, next) {
+        responses.push(request.res.statusCode);
 
-        if (Math.floor(ctx.res.statusCode / 100) !== 5) return next();
+        if (Math.floor(request.res.statusCode / 100) !== 5) return next();
 
-        ctx.retry();
+        request.retry();
       });
 
       this.client._get('/retry', function(err, res) {
@@ -1445,9 +1445,9 @@ describe('Client', function() {
         .post('/retry', 'test')
         .reply(503);
 
-      this.client._ext('onResponse', function(ctx, next) {
+      this.client._ext('onResponse', function(request, next) {
         try {
-          ctx.retry();
+          request.retry();
         } catch (err) {
           next(err);
         }
@@ -1481,12 +1481,12 @@ describe('Client', function() {
 
       var responses = [];
 
-      this.client._ext('onResponse', function(ctx, next) {
-        responses.push(ctx.res.statusCode);
+      this.client._ext('onResponse', function(request, next) {
+        responses.push(request.res.statusCode);
 
-        if (Math.floor(ctx.res.statusCode / 100) !== 5) return next();
+        if (Math.floor(request.res.statusCode / 100) !== 5) return next();
 
-        ctx.retry();
+        request.retry();
       });
 
       var body = function() {
@@ -1516,9 +1516,9 @@ describe('Client', function() {
         .get('/retry')
         .reply(500);
 
-      this.client._ext('onResponse', function(ctx, next) {
+      this.client._ext('onResponse', function(request, next) {
         try {
-          ctx.retry();
+          request.retry();
         } catch (err) {
           next(err);
         }
@@ -1549,12 +1549,12 @@ describe('Client', function() {
 
       var responses = [];
 
-      this.client._ext('onResponse', function(ctx, next) {
-        responses.push(ctx.res.statusCode);
+      this.client._ext('onResponse', function(request, next) {
+        responses.push(request.res.statusCode);
 
-        if (Math.floor(ctx.res.statusCode / 100) !== 5) return next();
+        if (Math.floor(request.res.statusCode / 100) !== 5) return next();
 
-        ctx.retry();
+        request.retry();
       });
 
       var chunks;
@@ -1596,20 +1596,20 @@ describe('Client', function() {
         .get('/get')
         .reply(404, 'ok');
 
-      function handleNotFound(ctx, next) {
-        if (ctx.res && ctx.res.statusCode === 404) {
-          ctx.res.body = undefined;
-          delete ctx.err;
+      function handleNotFound(request, next) {
+        if (request.res && request.res.statusCode === 404) {
+          request.res.body = undefined;
+          delete request.err;
         }
 
         next();
       }
 
-      function check(ctx, next) {
-        should.not.exist(ctx.err);
+      function check(request, next) {
+        should.not.exist(request.err);
 
-        should.exist(ctx.res);
-        should(ctx.res.body).equal(undefined);
+        should.exist(request.res);
+        should(request.res.body).equal(undefined);
 
         next(false, null, 'world');
       }
@@ -1640,6 +1640,68 @@ describe('Client', function() {
           '(10ms)');
         err.should.have.property('isPapi', true);
         err.should.have.property('isTimeout', true);
+
+        done();
+      });
+    });
+
+    it('should abort request', function(done) {
+      this.nock
+        .get('/get')
+        .delayConnection(200)
+        .reply(200);
+
+      var opts = {
+        path: '/get',
+        ctx: new events.EventEmitter(),
+      };
+
+      this.client._get(opts, function(err) {
+        should.exist(err);
+        err.should.have.property('message', 'testclient: request aborted');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isAbort', true);
+
+        done();
+      });
+
+      setTimeout(function() {
+        opts.ctx.emit('done');
+      }, 50);
+    });
+
+    // this is get coverage for clearTimeout and ctx removeEventListener on end
+    it('should clean abort/timeout on end', function(done) {
+      this.nock
+        .get('/get')
+        .reply(200);
+
+      var opts = {
+        path: '/get',
+        ctx: new events.EventEmitter(),
+        timeout: 100,
+      };
+
+      this.client._get(opts, function(err) {
+        should.not.exist(err);
+
+        done();
+      });
+    });
+
+    // this is get coverage for clearTimeout and ctx removeEventListener on
+    // error
+    it('should clean abort/timeout on error', function(done) {
+      var opts = {
+        path: '/get',
+        ctx: new events.EventEmitter(),
+        timeout: 100,
+      };
+
+      this.client._get(opts, function(err) {
+        should.exist(err);
+
+        err.message.should.containEql('Nock: No match for request');
 
         done();
       });
