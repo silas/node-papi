@@ -563,7 +563,11 @@ describe('Client', function() {
 
       var baseUrl = protocol + '//' + hostname;
 
-      var client = papi.Client({ baseUrl: baseUrl, timeout: 1000 });
+      var client = papi.Client({
+        baseUrl: baseUrl,
+        timeout: 1000,
+        agent: false,
+      });
 
       client._get('/one', lodash.noop);
 
@@ -574,6 +578,7 @@ describe('Client', function() {
           method: method,
           path: '/one',
           port: 80,
+          agent: false,
         });
       });
     });
@@ -622,7 +627,17 @@ describe('Client', function() {
 
       var client = papi.Client({ baseUrl: baseUrl });
 
-      client._get('/one', lodash.noop);
+      var opts = {
+        path: '/one',
+        agent: false,
+        key: 'key',
+        passphrase: 'passphrase',
+        ciphers: 'ciphers',
+        rejectUnauthorized: false,
+        secureProtocol: 'TLSv1_method',
+      };
+
+      client._get(opts, lodash.noop);
 
       process.nextTick(function() {
         should(self.https.opts).eql({
@@ -631,6 +646,12 @@ describe('Client', function() {
           method: method,
           path: '/one',
           port: 443,
+          agent: false,
+          key: 'key',
+          passphrase: 'passphrase',
+          ciphers: 'ciphers',
+          rejectUnauthorized: false,
+          secureProtocol: 'TLSv1_method',
         });
 
         done();
