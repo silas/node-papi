@@ -1,6 +1,6 @@
 {
   "name": "papi",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "Build HTTP API clients",
   "main": "lib",
   "devDependencies": {

@@ -720,7 +720,7 @@ describe('Client', function() {
         }
       });
 
-      opts.ctx.emit('done');
+      opts.ctx.emit('cancel');
     });
 
     it('should handle multiple events with timeout', function(done) {
@@ -1769,7 +1769,7 @@ describe('Client', function() {
       });
 
       setTimeout(function() {
-        opts.ctx.emit('done');
+        opts.ctx.emit('cancel');
       }, 50);
     });
 

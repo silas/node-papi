@@ -70,7 +70,7 @@ Request
  * query (Object&lt;String, String|String[]&gt;, optional): query parameters
  * body (Object|Buffer|Readable, optional): request body
  * type (String, optional, supports: form, json, text): request body encoding type
- * ctx (EventEmitter, optional): emit `done` to abort request
+ * ctx (EventEmitter, optional): emit `cancel` to abort request
  * timeout (Number, optional): number of milliseconds before request is aborted
  * tags (String[], optional): tags included in `_log` calls
 
