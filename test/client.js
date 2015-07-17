@@ -1305,6 +1305,42 @@ describe('Client', function() {
       });
     });
 
+    it('should return error when ctx is canceled', function(done) {
+      var ctx = new events.EventEmitter();
+      ctx.canceled = true;
+
+      var opts = { path: '/get', ctx: ctx };
+
+      this.client._request(opts, function(err, res) {
+        should.exist(err);
+        err.should.have.property('message', 'testclient: ctx already canceled');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
+
+        should.not.exist(res);
+
+        done();
+      });
+    });
+
+    it('should return error when ctx is finished', function(done) {
+      var ctx = new events.EventEmitter();
+      ctx.finished = true;
+
+      var opts = { path: '/get', ctx: ctx };
+
+      this.client._request(opts, function(err, res) {
+        should.exist(err);
+        err.should.have.property('message', 'testclient: ctx already finished');
+        err.should.have.property('isPapi', true);
+        err.should.have.property('isValidation', true);
+
+        should.not.exist(res);
+
+        done();
+      });
+    });
+
     it('should use content-type for type', function(done) {
       this.nock
         .patch('/patch', { hello: 'world' })
