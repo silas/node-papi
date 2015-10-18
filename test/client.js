@@ -1480,6 +1480,7 @@ describe('Client', function() {
                                 'method']);
         events[1][1].should.eql({
           statusCode: 200,
+          path: '/post',
           headers: {
             'content-type': 'application/json',
           },
