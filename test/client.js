@@ -1388,6 +1388,7 @@ describe('Client', function() {
       this.client._post('/post', function(err, res) {
         should.exist(err);
         err.should.have.property('message', 'testclient: bad request');
+        err.should.have.property('statusCode', 400);
         err.should.have.property('isPapi', true);
         err.should.have.property('isResponse', true);
 
@@ -1406,6 +1407,7 @@ describe('Client', function() {
       this.client._post('/post', function(err, res) {
         should.exist(err);
         err.should.have.property('message', 'testclient: validation error');
+        err.should.have.property('statusCode', 400);
         err.should.have.property('isPapi', true);
         err.should.have.property('isResponse', true);
 
@@ -1424,6 +1426,7 @@ describe('Client', function() {
       this.client._post('/post', function(err, res) {
         should.exist(err);
         err.should.have.property('message', 'testclient: request failed: 499');
+        err.should.have.property('statusCode', 499);
         err.should.have.property('isPapi', true);
         err.should.have.property('isResponse', true);
 
