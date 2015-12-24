@@ -11,7 +11,7 @@ This is a module for building HTTP API clients.
  * [Client](#client)
  * [Shortcuts](#shortcuts)
 
-<a name="client"/>
+<a name="client"></a>
 ### papi.Client([options])
 
 Initialize a new client.
@@ -47,7 +47,7 @@ function GitHub(opts) {
 util.inherits(GitHub, papi.Client);
 ```
 
-<a name="client-request"/>
+<a name="client-request"></a>
 ### client.\_request(request, [callback...], callback)
 
 Make an HTTP request.
@@ -182,7 +182,7 @@ Usage
 client._plugin(require('papi-retry'));
 ```
 
-<a name="shortcuts"/>
+<a name="shortcuts"></a>
 ### papi.request(request, [callback...], callback)
 
 Shortcuts for making one-off requests.
