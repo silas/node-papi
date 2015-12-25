@@ -15,6 +15,8 @@ var util = require('util');
 var papi = require('../lib');
 var tools = require('../lib/tools');
 
+if (!GLOBAL.Promise) GLOBAL.Promise = bluebird;  // jshint ignore:line
+
 /**
  * Example test
  */
