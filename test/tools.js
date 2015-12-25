@@ -141,13 +141,21 @@ describe('tools', function() {
       it('should work', function() {
         var c = this.client;
 
-        should(function() { tools.promisify(); }).throw('client required');
+        should(function() {
+          tools.promisify();
+        }).throw('client required');
 
         tools.promisify(c);
 
         // no global promise
         delete GLOBAL.Promise;
-        should(function() { tools.promisify(c); }).throw('wrapper required');
+        should(function() {
+          tools.promisify(c);
+        }).throw('wrapper required');
+
+        should(function() {
+          tools.promisify(c, true);
+        }).throw('wrapper must be a function');
 
         tools.promisify(c, function() {});
       });
