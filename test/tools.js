@@ -15,8 +15,6 @@ var util = require('util');
 var papi = require('../lib');
 var tools = require('../lib/tools');
 
-if (!GLOBAL.Promise) GLOBAL.Promise = bluebird;  // jshint ignore:line
-
 /**
  * Example test
  */
@@ -125,89 +123,113 @@ describe('tools', function() {
 
   describe('promisify', function() {
     beforeEach(function() {
+      this._promise = GLOBAL.Promise;
+      if (!this._promise) GLOBAL.Promise = bluebird;
+
       this.client = new Example({ baseUrl: 'http://example.org' });
     });
 
-    it('should work', function() {
-      var c = this.client;
-
-      should(function() { tools.promisify(); }).throw('client required');
-      tools.promisify(c, function() {});
+    afterEach(function() {
+      if (this._promise) {
+        GLOBAL.Promise = this._promise;
+      } else {
+        delete GLOBAL.Promise;
+      }
     });
 
-    it('should support default promise', function(done) {
-      tools.promisify(this.client);
+    describe('constructor', function() {
+      it('should work', function() {
+        var c = this.client;
 
-      this.nock.get('/test').reply(200);
+        should(function() { tools.promisify(); }).throw('client required');
 
-      this.client.test().then(function(res) {
-        should(res.statusCode).equal(200);
-        done();
+        tools.promisify(c);
+
+        // no global promise
+        delete GLOBAL.Promise;
+        should(function() { tools.promisify(c); }).throw('wrapper required');
+
+        tools.promisify(c, function() {});
       });
     });
 
-    it('should support default promise error', function(done) {
-      tools.promisify(this.client);
+    describe('default promise', function() {
+      it('should handle resolve', function(done) {
+        tools.promisify(this.client);
 
-      this.nock.get('/test').reply(500);
+        this.nock.get('/test').reply(200);
 
-      this.client.test().catch(function(err) {
-        should(err).have.property('message', 'internal server error');
-        done();
+        this.client.test().then(function(res) {
+          should(res.statusCode).equal(200);
+          done();
+        });
+      });
+
+      it('should handle callback reject', function(done) {
+        tools.promisify(this.client);
+
+        this.nock.get('/test').reply(500);
+
+        this.client.test().catch(function(err) {
+          should(err).have.property('message', 'internal server error');
+          done();
+        });
+      });
+
+      it('should handle sync reject', function(done) {
+        tools.promisify(this.client);
+
+        this.client.test2().catch(function(err) {
+          should(err).have.property('message', 'ok');
+          done();
+        });
+      });
+
+      it('should handle callback success', function(done) {
+        tools.promisify(this.client);
+
+        this.nock.get('/test').reply(200);
+
+        this.client.test(function(err, res) {
+          should.not.exist(err);
+          should(res.statusCode).equal(200);
+          done();
+        });
+      });
+
+      it('should handle callback failure', function(done) {
+        tools.promisify(this.client);
+
+        this.nock.get('/test').reply(500);
+
+        this.client.test(function(err) {
+          should(err).have.property('message', 'internal server error');
+          done();
+        });
       });
     });
 
-    it('should support default promise error', function(done) {
-      tools.promisify(this.client);
+    describe('bluebird promise', function() {
+      it('should handle resolve', function(done) {
+        tools.promisify(this.client, bluebird.fromCallback);
 
-      this.client.test2().catch(function(err) {
-        should(err).have.property('message', 'ok');
-        done();
+        this.nock.get('/test').reply(200);
+
+        this.client.test().then(function(res) {
+          should(res.statusCode).equal(200);
+          done();
+        });
       });
-    });
 
-    it('should support promise', function(done) {
-      tools.promisify(this.client, bluebird.fromCallback);
+      it('should handle callback reject', function(done) {
+        tools.promisify(this.client, bluebird.fromCallback);
 
-      this.nock.get('/test').reply(200);
+        this.nock.get('/test').reply(500);
 
-      this.client.test().then(function(res) {
-        should(res.statusCode).equal(200);
-        done();
-      });
-    });
-
-    it('should support promise error', function(done) {
-      tools.promisify(this.client, bluebird.fromCallback);
-
-      this.nock.get('/test').reply(500);
-
-      this.client.test().catch(function(err) {
-        should(err).have.property('message', 'internal server error');
-        done();
-      });
-    });
-
-    it('should support callback', function(done) {
-      tools.promisify(this.client, bluebird.fromCallback);
-
-      this.nock.get('/test').reply(200);
-
-      this.client.test(function(err, res) {
-        should.not.exist(err);
-        should(res.statusCode).equal(200);
-        done();
-      });
-    });
-
-    it('should support callback error', function(done) {
-      tools.promisify(this.client, bluebird.fromCallback);
-
-      this.nock.get('/test').reply(500);
-
-      this.client.test(function(err) {
-        should(err).have.property('message', 'internal server error');
-        done();
+        this.client.test().catch(function(err) {
+          should(err).have.property('message', 'internal server error');
+          done();
+        });
       });
     });
   });
