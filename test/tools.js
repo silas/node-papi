@@ -123,17 +123,17 @@ describe('tools', function() {
 
   describe('promisify', function() {
     beforeEach(function() {
-      this._promise = GLOBAL.Promise;
-      if (!this._promise) GLOBAL.Promise = bluebird;
+      this._promise = global.Promise;
+      if (!this._promise) global.Promise = bluebird;
 
       this.client = new Example({ baseUrl: 'http://example.org' });
     });
 
     afterEach(function() {
       if (this._promise) {
-        GLOBAL.Promise = this._promise;
+        global.Promise = this._promise;
       } else {
-        delete GLOBAL.Promise;
+        delete global.Promise;
       }
     });
 
@@ -148,7 +148,7 @@ describe('tools', function() {
         tools.promisify(c);
 
         // no global promise
-        delete GLOBAL.Promise;
+        delete global.Promise;
         should(function() {
           tools.promisify(c);
         }).throw('wrapper required');

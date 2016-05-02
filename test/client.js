@@ -348,12 +348,13 @@ describe('Client', function() {
     });
 
     it('should throw on invalid content', function() {
-      (function() {
+      should(function() {
         make()._decode('application/json', '<html>');
-      }).should.throw(Error, {
-        message: 'decode (application/json) failed: Unexpected token <',
-        isPapi: true,
-        isCodec: true,
+      }).throw(Error, function(err) {
+        should(err.message)
+          .startWith('decode (application/json) failed: Unexpected token <');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isCodec', true);
       });
     });
   });
@@ -879,10 +880,10 @@ describe('Client', function() {
 
       this.client._get('/get', function(err, res) {
         should.exist(err);
-        err.should.have.property('message', 'testclient: decode ' +
-          '(application/json) failed: Unexpected token <');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isCodec', true);
+        should(err.message).startWith('testclient: decode (application/json) ' +
+            'failed: Unexpected token <');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isCodec', true);
 
         res.body.toString().should.eql('<html>');
 

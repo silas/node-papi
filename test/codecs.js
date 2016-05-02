@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-require('should');
+var should = require('should');
 
 var codecs = require('../lib/codecs');
 
@@ -17,18 +17,18 @@ describe('codecs', function() {
     it('should encode', function() {
       var value = codecs.text.encode('ok');
 
-      value.should.be.instanceof(Buffer);
-      value.length.should.equal(2);
-      value[0].should.equal(111);
-      value[1].should.equal(107);
+      should(value).be.instanceof(Buffer);
+      should(value.length).equal(2);
+      should(value[0]).equal(111);
+      should(value[1]).equal(107);
     });
 
     it('should decode buffer', function() {
-      codecs.text.decode(new Buffer('ok')).should.eql('ok');
+      should(codecs.text.decode(new Buffer('ok'))).eql('ok');
     });
 
     it('should decode string', function() {
-      codecs.text.decode('ok').should.eql('ok');
+      should(codecs.text.decode('ok')).eql('ok');
     });
   });
 
@@ -36,19 +36,19 @@ describe('codecs', function() {
     it('should encode', function() {
       var value = codecs.json.encode({ hello: 'world' });
 
-      value.should.eql(new Buffer('{"hello":"world"}'));
+      should(value).eql(new Buffer('{"hello":"world"}'));
     });
 
     it('should decode buffer', function() {
       var value = codecs.json.decode(new Buffer('{"hello":"world"}'));
 
-      value.should.eql({ hello: 'world' });
+      should(value).eql({ hello: 'world' });
     });
 
     it('should decode string', function() {
       var value = codecs.json.decode('{"hello":"world"}');
 
-      value.should.eql({ hello: 'world' });
+      should(value).eql({ hello: 'world' });
     });
   });
 
@@ -56,19 +56,19 @@ describe('codecs', function() {
     it('should encode', function() {
       var value = codecs.form.encode({ hello: 'world' });
 
-      value.should.eql(new Buffer('hello=world'));
+      should(value).eql(new Buffer('hello=world'));
     });
 
     it('should decode buffer', function() {
       var value = codecs.form.decode(new Buffer('hello=world'));
 
-      value.should.eql({ hello: 'world' });
+      should(value).eql({ hello: 'world' });
     });
 
-    it('should decode string', function() {
+    it('should decode string @test', function() {
       var value = codecs.form.decode('hello=world');
 
-      value.should.eql({ hello: 'world' });
+      should(value).eql({ hello: 'world' });
     });
   });
 });
