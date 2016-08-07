@@ -1508,6 +1508,14 @@ describe('Client', function() {
         .get(path)
         .reply(statusCode, { hello: 'world' });
 
+      self.client._ext('onCreate', function(request, next) {
+        should.exist(request);
+
+        called.push('onCreate');
+
+        next();
+      });
+
       self.client._ext('onRequest', function(request, next) {
         should.exist(request);
 
@@ -1550,7 +1558,7 @@ describe('Client', function() {
 
         should.exist(res);
 
-        called.should.eql(['onRequest', 'onResponse']);
+        called.should.eql(['onCreate', 'onRequest', 'onResponse']);
 
         done();
       });
