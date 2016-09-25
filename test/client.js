@@ -15,6 +15,7 @@ var nock = require('nock');
 var should = require('should');
 var sinon = require('sinon');
 var stream = require('stream');
+var url = require('url');
 
 var meta = require('../package.json');
 var papi = require('../lib');
@@ -51,6 +52,32 @@ describe('Client', function() {
       });
     });
 
+    it('should not mutate options', function() {
+      var options = {
+        baseUrl: url.parse('http://example.org'),
+        headers: { hello: 'world' },
+        type: 'text',
+        encoders: { text: function() {} },
+        decoders: { text: function() {} },
+        tags: ['test'],
+        timeout: 123,
+      };
+
+      var optionsClone = lodash.cloneDeep(options);
+
+      var client = papi.Client(options);
+
+      client._opts.baseUrl.fail = true;
+      client._opts.headers.fail = true;
+      client._opts.type = true;
+      client._opts.encoders.fail = true;
+      client._opts.decoders.fail = true;
+      client._opts.tags.push('fail');
+      client._opts.timeout = 123;
+
+      should(options).eql(optionsClone);
+    });
+
     it('should require baseUrl', function() {
       (function() {
         papi.Client();
@@ -66,6 +93,16 @@ describe('Client', function() {
         papi.Client({ baseUrl: 123 });
       }).should.throw(Error, {
         message: 'baseUrl must be a string: 123',
+        isPapi: true,
+        isValidation: true,
+      });
+    });
+
+    it('should require tags be an array', function() {
+      (function() {
+        papi.Client({ baseUrl: BASE_URL, tags: true });
+      }).should.throw(Error, {
+        message: 'tags must be an array',
         isPapi: true,
         isValidation: true,
       });
