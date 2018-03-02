@@ -371,6 +371,46 @@ describe('Client', function() {
         isCodec: true,
       });
     });
+
+    it('should add multipart headers', function(done) {
+      var buf = Buffer.from('this is a buffer');
+
+      var parts = {
+	json: {
+	  'Content-Type': 'image/custom',
+	  body: buf
+	}
+      };
+
+      var body = make()._encode('multipart/form-data',
+				{ parts: parts, boundary: '12345' });
+      var isBuffer = Buffer.isBuffer(body);
+
+      should(isBuffer).be.true();
+      should(body.toString()).match(new RegExp('Content-Type: image/custom'));
+
+      done();
+    });
+
+    it('should throw on invalid multipart parts', function(done) {
+      var buf = Buffer.from('this is a buffer');
+
+      var parts = {
+	json: {
+	  'Content-Type': 'image/custom',
+	  body: buf
+	},
+	good: 'foobar',
+	bad: function() { }
+      };
+
+      (function() {
+	return make()._encode('multipart/form-data',
+			      { parts: parts, boundary: '12345' });
+      }).should.throw(Error);
+
+      done();
+    });
   });
 
   describe('decode', function() {
@@ -1150,6 +1190,120 @@ describe('Client', function() {
         should.exist(res);
 
         done();
+      });
+    });
+
+    it('should handle multipart post', function(done) {
+      this.nock
+	.post('/post')
+	.matchHeader('content-type', new RegExp('^multipart/form-data'))
+	.reply(200);
+
+      var buf = Buffer.from('this is a buffer');
+
+      var opts = {
+	path: '/post',
+	multipart: {
+	  file0: buf,
+	  json: '{ name: "this", file: "file0" }'
+	}
+      };
+
+      this.client._post(opts, function(err, res) {
+	should.not.exist(err);
+
+	should.exist(res);
+
+	done();
+      });
+    });
+
+    it('should throw if both body and multipart', function(done) {
+      var buf = Buffer.from('this is a buffer');
+
+      var opts = {
+	path: '/post',
+	multipart: {
+	  file0: buf,
+	  json: '{ name: "this", file: "file0" }'
+	},
+	body: buf
+      };
+
+      this.client._post(opts, function(err) {
+	should.exist(err);
+	err.should.have.property(
+	  'message',
+	  'testclient: body specified for multipart POST');
+
+	done();
+      });
+    });
+
+    it('should throw if multipart and not POST', function(done) {
+      var buf = Buffer.from('this is a buffer');
+
+      var opts = {
+	path: '/post',
+	multipart: {
+	  file0: buf,
+	  json: '{ name: "this", file: "file0" }'
+	}
+      };
+
+      this.client._get(opts, function(err) {
+	should.exist(err);
+	err.should.have.property(
+	  'message',
+	  'testclient: invalid method for multipart body: GET');
+
+	done();
+      });
+    });
+
+    it('should throw if multipart and not multipart type', function(done) {
+      var buf = Buffer.from('this is a buffer');
+
+      var opts = {
+	path: '/post',
+	type: 'text',
+	multipart: {
+	  file0: buf,
+	  json: '{ name: "this", file: "file0" }'
+	}
+      };
+
+      this.client._post(opts, function(err) {
+	should.exist(err);
+	err.should.have.property(
+	  'message',
+	  'testclient: multipart body needs multipart type');
+
+	done();
+      });
+    });
+
+    it('should throw if multipart and not multipart type', function(done) {
+      var buf = Buffer.from('this is a buffer');
+
+      var opts = {
+	path: '/post',
+	multipart: {
+	  file0: buf,
+	  json: '{ name: "this", file: "file0" }'
+	},
+	headers: {
+	  'content-type': 'image/jpeg'
+	}
+      };
+
+      this.client._post(opts, function(err) {
+	should.exist(err);
+	err.should.have.property(
+	  'message',
+	  'testclient: content-type specified for multipart body');
+
+	done();
       });
     });
 
