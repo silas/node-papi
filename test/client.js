@@ -958,7 +958,7 @@ describe('Client', function() {
         params: { extra: null },
       };
 
-      opts.params.test = new Buffer('hello%2Bworld');
+      opts.params.test = Buffer.from('hello%2Bworld');
       opts.params.test.encode = false;
 
       this.client._get(opts, function(err, res) {
@@ -1076,7 +1076,7 @@ describe('Client', function() {
 
       var opts = {
         path: '/post',
-        body: new Buffer('test'),
+        body: Buffer.from('test'),
         headers: { 'content-type': 'custom' },
       };
 
@@ -1098,7 +1098,7 @@ describe('Client', function() {
 
       var opts = {
         path: '/post',
-        body: function() { return new Buffer('test'); },
+        body: function() { return Buffer.from('test'); },
         headers: { 'content-type': 'custom' },
       };
 
@@ -1136,7 +1136,7 @@ describe('Client', function() {
 
       var body = new stream.Readable();
 
-      body.push(new Buffer('test'));
+      body.push(Buffer.from('test'));
       body.push(null);
 
       var opts = {
@@ -1648,7 +1648,7 @@ describe('Client', function() {
         body: new stream.Readable(),
       };
 
-      req.body.push(new Buffer('test'));
+      req.body.push(Buffer.from('test'));
       req.body.push(null);
 
       this.client._post(req, function(err) {
@@ -1681,7 +1681,7 @@ describe('Client', function() {
 
       var body = function() {
         var s = new stream.Readable();
-        s.push(new Buffer('test'));
+        s.push(Buffer.from('test'));
         s.push(null);
         return s;
       };

@@ -24,7 +24,7 @@ describe('codecs', function() {
     });
 
     it('should decode buffer', function() {
-      should(codecs.text.decode(new Buffer('ok'))).eql('ok');
+      should(codecs.text.decode(Buffer.from('ok'))).eql('ok');
     });
 
     it('should decode string', function() {
@@ -36,11 +36,11 @@ describe('codecs', function() {
     it('should encode', function() {
       var value = codecs.json.encode({ hello: 'world' });
 
-      should(value).eql(new Buffer('{"hello":"world"}'));
+      should(value).eql(Buffer.from('{"hello":"world"}'));
     });
 
     it('should decode buffer', function() {
-      var value = codecs.json.decode(new Buffer('{"hello":"world"}'));
+      var value = codecs.json.decode(Buffer.from('{"hello":"world"}'));
 
       should(value).eql({ hello: 'world' });
     });
@@ -56,19 +56,21 @@ describe('codecs', function() {
     it('should encode', function() {
       var value = codecs.form.encode({ hello: 'world' });
 
-      should(value).eql(new Buffer('hello=world'));
+      should(value).eql(Buffer.from('hello=world'));
     });
 
     it('should decode buffer', function() {
-      var value = codecs.form.decode(new Buffer('hello=world'));
+      var value = codecs.form.decode(Buffer.from('hello=world'));
 
-      should(value).eql({ hello: 'world' });
+      should(value).keys(['hello']);
+      should(value).property('hello', 'world');
     });
 
-    it('should decode string @test', function() {
+    it('should decode string', function() {
       var value = codecs.form.decode('hello=world');
 
-      should(value).eql({ hello: 'world' });
+      should(value).keys(['hello']);
+      should(value).property('hello', 'world');
     });
   });
 });
