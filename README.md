@@ -21,19 +21,24 @@ it in your client's constructor.
 
 Options
 
- * baseUrl (String): base URL, should not include trailing slash
- * headers (Object&lt;String, String&gt;, optional): defaults headers to include in every request
- * type (String, optional, supports: form, json, text): default request body encoding type
- * encoders (Object&lt;String, Function&gt;, optional): an object that maps a mime type to a function. The function should accept an object and return a Buffer.
- * decoders (Object&lt;String, Function&gt;, optional): an object that maps a mime type to a function. The function should accept a Buffer or String (must support both) and return an object.
- * tags (String[], optional): tags included in `_log` calls
- * timeout (Number, optional): default number of milliseconds before request is aborted
+ * baseUrl (string): base URL, should not include trailing slash
+ * headers (Object&lt;string, string&gt;, optional): defaults headers to include in every request
+ * type (string, optional, supports: form, json, text): default request body encoding type
+ * encoders (Object&lt;string, Function&gt;, optional): an object that maps a mime type to a function. The function should accept an object and return a Buffer.
+ * decoders (Object&lt;string, Function&gt;, optional): an object that maps a mime type to a function. The function should accept a Buffer or string (must support both) and return an object.
+ * tags (string[], optional): tags included in `_log` calls
+ * timeout (number, optional): default number of milliseconds before request is aborted
+
+Advanced options
+
+ * agent (http.Agent|https.Agent, optionals): if not set uses the global agent
+ * tls options: ca, cert, ciphers, clientCertEngine, crl, dhparam, ecdhCurve, honorCipherOrder, key, passphrase, pfx, rejectUnauthorized, secureOptions, secureProtocol, servername, and sessionIdContext (see [Node.js docs](https://nodejs.org/dist/latest/docs/api/tls.html#tls_tls_connect_options_callback) for details)
 
 Usage
 
 ``` javascript
-var papi = require('papi');
-var util = require('util');
+const papi = require('papi');
+const util = require('util');
 
 function GitHub(opts) {
   opts = opts || {};
@@ -58,21 +63,21 @@ HTTP requests in your client methods.
 Arguments
 
  * request (Object): request options
- * callback... (Function&lt;request, next&gt;, optional): middleware functions that can mutate `request.err` or `request.res`. Call `next` without arguments to continue execution, `next(err)` to break with an error, or `next(false, arguments...)` to trigger the final callback with the given arguments.
- * callback (Function&lt;err, res&gt;): request callback function.
+ * callback... (Function&lt;request, next&gt;, optional): middleware functions that can mutate `request.err` or `request.res`. Call `next` without arguments to continue execution, `next(err)` to break with an error, or `next(false, arguments...)` to trigger the final callback with the given arguments
+ * callback (Function&lt;err, res&gt;): request callback function
 
 Request
 
- * path (String): request path, can include variable segments defined by curly braces (ex: `/user/{id}`)
- * method (String): request method
- * headers (Object&lt;String, String&gt;, optional): request headers
- * params (Object&lt;String, String&gt;, optional): sets variables in request path
- * query (Object&lt;String, String|String[]&gt;, optional): query parameters
+ * path (string): request path, can include variable segments defined by curly braces (ex: `/user/{id}`)
+ * method (string): request method
+ * headers (Object&lt;string, string&gt;, optional): request headers
+ * params (Object&lt;string, string&gt;, optional): sets variables in request path
+ * query (Object&lt;string, string|string[]&gt;, optional): query parameters
  * body (Object|Buffer|Readable, optional): request body
- * type (String, optional, supports: form, json, text): request body encoding type
+ * type (string, optional, supports: form, json, text): request body encoding type
  * ctx (EventEmitter, optional): emit `cancel` to abort request
- * timeout (Number, optional): number of milliseconds before request is aborted
- * tags (String[], optional): tags included in `_log` calls
+ * timeout (number, optional): number of milliseconds before request is aborted
+ * tags (string[], optional): tags included in `_log` calls
 
 There are also `_get`, `_head`, `_post`, `_put`, `_delete` (`_del`), `_patch`,
 and `_options` shortcuts with the same method signature as `_request`.
@@ -81,12 +86,12 @@ Usage
 
 ``` javascript
 GitHub.prototype.gists = function(username, callback) {
-  var opts = {
+  const opts = {
     path: '/users/{username}/gists',
     params: { username: username },
   };
 
-  this._get(opts, function(err, res) {
+  this._get(opts, (err, res) => {
     if (err) return callback(err);
 
     callback(null, res.body);
@@ -108,7 +113,7 @@ Emit log events.
 
 Arguments
 
- * tags (String[]): tags associated with event
+ * tags (string[]): tags associated with event
  * data (optional): remaining arguments
 
 Usage
@@ -136,13 +141,13 @@ Register an extension function.
 
 Arguments
 
- * event (String): event name
+ * event (string): event name
  * callback (Function): function to execute at a specified point during the request
 
 Usage
 
 ``` javascript
-client._ext('onRequest', function(request, next) {
+client._ext('onRequest', (request, next) => {
   console.log('request', request.opts.method + ' ' + request.opts.path);
 
   request.start = new Date();
@@ -150,9 +155,9 @@ client._ext('onRequest', function(request, next) {
   next();
 });
 
-client._ext('onResponse', function(request, next) {
-  var duration = new Date() - request.start;
-  var statusCode = request.res ? request.res.statusCode : 'none';
+client._ext('onResponse', (request, next) => {
+  const duration = new Date() - request.start;
+  const statusCode = request.res ? request.res.statusCode : 'none';
 
   console.log('response', request.opts.method, request.opts.path, statusCode, duration + 'ms');
 
@@ -192,7 +197,7 @@ that `path` is replaced with `url`.
 
 Request
 
- * url (String): request url (ex: `http://example.org/`)
+ * url (string): request url (ex: `http://example.org/`)
 
 There are also `get`, `head`, `post`, `put`, `delete` (`del`), `patch`, and
 `options` shortcuts with the same method signature as `request`.
@@ -200,9 +205,9 @@ There are also `get`, `head`, `post`, `put`, `delete` (`del`), `patch`, and
 Usage
 
 ``` javascript
-var papi = require('papi');
+const papi = require('papi');
 
-papi.get('https://api.github.com/users/silas/gists', function(err, res) {
+papi.get('https://api.github.com/users/silas/gists', (err, res) => {
   if (err) throw err;
 
   res.body.forEach(function(gist) {
@@ -219,8 +224,8 @@ papi.get('https://api.github.com/users/silas/gists', function(err, res) {
  * Module dependencies.
  */
 
-var papi = require('papi');
-var util = require('util');
+const papi = require('papi');
+const util = require('util');
 
 /**
  * GitHub API client
@@ -264,7 +269,7 @@ util.inherits(GitHub, papi.Client);
  */
 
 GitHub.prototype.gists = function(username, callback) {
-  var opts = {
+  const opts = {
     path: '/users/{username}/gists',
     params: { username: username },
   };
@@ -277,9 +282,9 @@ GitHub.prototype.gists = function(username, callback) {
  */
 
 function main() {
-  var github = new GitHub({ debug: true });
+  const github = new GitHub({ debug: true });
 
-  github.gists('silas', function(err, res) {
+  github.gists('silas', (err, res) => {
     if (err) throw err;
 
     console.log('----');
