@@ -1526,8 +1526,8 @@ describe('Client', function() {
           headers: {
             'content-type': 'application/json',
           },
-          remoteAddress: undefined,
-          remotePort: undefined,
+          remoteAddress: null,
+          remotePort: null,
         });
 
         done();
