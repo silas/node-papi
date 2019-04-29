@@ -1,4 +1,4 @@
-# Papi [![Build Status](https://travis-ci.org/silas/node-papi.png?branch=master)](https://travis-ci.org/silas/node-papi)
+# Papi
 
 This is a module for building HTTP API clients.
 
