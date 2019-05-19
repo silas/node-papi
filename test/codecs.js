@@ -1,12 +1,8 @@
 'use strict';
 
-/**
- * Module dependencies.
- */
+const should = require('should');
 
-var should = require('should');
-
-var codecs = require('../lib/codecs');
+const codecs = require('../lib/codecs');
 
 /**
  * Tests
@@ -15,7 +11,7 @@ var codecs = require('../lib/codecs');
 describe('codecs', function() {
   describe('text', function() {
     it('should encode', function() {
-      var value = codecs.text.encode('ok');
+      const value = codecs.text.encode('ok');
 
       should(value).be.instanceof(Buffer);
       should(value.length).equal(2);
@@ -34,19 +30,19 @@ describe('codecs', function() {
 
   describe('json', function() {
     it('should encode', function() {
-      var value = codecs.json.encode({ hello: 'world' });
+      const value = codecs.json.encode({ hello: 'world' });
 
       should(value).eql(Buffer.from('{"hello":"world"}'));
     });
 
     it('should decode buffer', function() {
-      var value = codecs.json.decode(Buffer.from('{"hello":"world"}'));
+      const value = codecs.json.decode(Buffer.from('{"hello":"world"}'));
 
       should(value).eql({ hello: 'world' });
     });
 
     it('should decode string', function() {
-      var value = codecs.json.decode('{"hello":"world"}');
+      const value = codecs.json.decode('{"hello":"world"}');
 
       should(value).eql({ hello: 'world' });
     });
@@ -54,20 +50,20 @@ describe('codecs', function() {
 
   describe('form', function() {
     it('should encode', function() {
-      var value = codecs.form.encode({ hello: 'world' });
+      const value = codecs.form.encode({ hello: 'world' });
 
       should(value).eql(Buffer.from('hello=world'));
     });
 
     it('should decode buffer', function() {
-      var value = codecs.form.decode(Buffer.from('hello=world'));
+      const value = codecs.form.decode(Buffer.from('hello=world'));
 
       should(value).keys(['hello']);
       should(value).property('hello', 'world');
     });
 
     it('should decode string', function() {
-      var value = codecs.form.decode('hello=world');
+      const value = codecs.form.decode('hello=world');
 
       should(value).keys(['hello']);
       should(value).property('hello', 'world');

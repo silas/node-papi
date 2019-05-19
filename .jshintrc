@@ -21,5 +21,6 @@
   "undef": true,
   "unused": true,
   "maxlen": 80,
-  "strict": true
+  "strict": true,
+  "esversion": 8
 }
