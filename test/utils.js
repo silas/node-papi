@@ -1,12 +1,29 @@
 'use strict';
 
+const should = require('should');
+const util = require('util');
+
+const utils = require('../lib/utils');
+
 /**
- * Module dependencies.
+ * Helpers
  */
 
-require('should');
+function inherited(prototype, properties) {
+  function Parent() {}
 
-var utils = require('../lib/utils');
+  function Child() {
+    for (var key in properties) {
+      this[key] = properties[key];
+    }
+  }
+
+  Parent.prototype = prototype;
+
+  util.inherits(Child, Parent);
+
+  return new Child();
+}
 
 /**
  * Tests
@@ -15,36 +32,36 @@ var utils = require('../lib/utils');
 describe('utils', function() {
   describe('isEmpty', function() {
     it('should handle empty values', function() {
-      utils.isEmpty(null).should.equal(true);
-      utils.isEmpty(false).should.equal(true);
-      utils.isEmpty([]).should.equal(true);
-      utils.isEmpty(true).should.equal(true);
-      utils.isEmpty({}).should.equal(true);
+      should(utils.isEmpty(null)).equal(true);
+      should(utils.isEmpty(false)).equal(true);
+      should(utils.isEmpty([])).equal(true);
+      should(utils.isEmpty(true)).equal(true);
+      should(utils.isEmpty({})).equal(true);
 
       Object.prototype.jerk = true;
-      utils.isEmpty({}).should.equal(true);
+      should(utils.isEmpty({})).equal(true);
       delete Object.prototype.jerk;
     });
 
     it('should handle non-empty values', function() {
-      utils.isEmpty(['one']).should.equal(false);
-      utils.isEmpty({ hello: 'world' }).should.equal(false);
+      should(utils.isEmpty(['one'])).equal(false);
+      should(utils.isEmpty({ hello: 'world' })).equal(false);
     });
   });
 
   describe('merge', function() {
     it('should merge nothing', function() {
-      utils.merge().should.eql({});
+      should(utils.merge()).eql({});
     });
 
     it('should merge objects', function() {
-      var values = utils.merge(
+      const values = utils.merge(
         { one: 1, ok: 1 },
         { two: 2, ok: 2, One: 2 },
         { three: 3, done: 'yes' }
       );
 
-      values.should.eql({
+      should(values).eql({
         one: 1,
         two: 2,
         ok: 2,
@@ -53,56 +70,74 @@ describe('utils', function() {
         done: 'yes',
       });
     });
+
+    it('should not merge inherited properties', function() {
+      const values = utils.merge(
+        { a: 1 },
+        inherited({ b: 2 }, { c: 3 })
+      );
+
+      should(values).eql({ a: 1, c: 3 });
+    });
   });
 
   describe('mergeHeaders', function() {
     it('should merge nothing', function() {
-      utils.mergeHeaders().should.eql({});
+      should(utils.mergeHeaders()).eql({});
     });
 
     it('should merge headers', function() {
-      var one = {
+      const one = {
         'Content-Length': 123,
         'content-type': 'application/json',
         host: 'google.com',
       };
 
-      var two = {
+      const two = {
         'content-length': 321,
         'X-Request-Id': 'abc',
       };
 
-      var three = utils.mergeHeaders(one, two);
+      const three = utils.mergeHeaders(one, two);
 
-      one.should.eql({
+      should(one).eql({
         'Content-Length': 123,
         'content-type': 'application/json',
         host: 'google.com',
       });
 
-      two.should.eql({
+      should(two).eql({
         'content-length': 321,
         'X-Request-Id': 'abc',
       });
 
-      three.should.eql({
+      should(three).eql({
         'content-length': 321,
         'content-type': 'application/json',
         host: 'google.com',
         'x-request-id': 'abc',
       });
     });
+
+    it('should not merge inherited properties', function() {
+      const values = utils.mergeHeaders(
+        { A: 1 },
+        inherited({ B: 2 }, { C: 3 })
+      );
+
+      should(values).eql({ a: 1, c: 3 });
+    });
   });
 
   describe('pick', function() {
     it('should pick from arguments', function() {
-      var data = { zero: 0, one: 1, two: 2 };
-      utils.pick(data, 'zero', 'two').should.eql({ zero: 0, two: 2 });
+      const data = { zero: 0, one: 1, two: 2 };
+      should(utils.pick(data, 'zero', 'two')).eql({ zero: 0, two: 2 });
     });
 
     it('should pick from an array', function() {
-      var data = { zero: 0, one: 1, two: 2 };
-      utils.pick(data, ['zero', 'two']).should.eql({ zero: 0, two: 2 });
+      const data = { zero: 0, one: 1, two: 2 };
+      should(utils.pick(data, ['zero', 'two'])).eql({ zero: 0, two: 2 });
     });
   });
 });

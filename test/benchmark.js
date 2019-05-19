@@ -2,54 +2,48 @@
 
 /* jshint expr: true */
 
-/**
- * Module dependencies.
- */
+const async = require('async');
+const http = require('http');
+const request = require('request');
+const should = require('should');
+const util = require('util');
 
-var async = require('async');
-var http = require('http');
-var request = require('request');
-var should = require('should');
-var util = require('util');
+const papi = require('../lib');
 
-var papi = require('../lib');
-
-var runner = process.env.BENCHMARK ? describe : describe.skip;
+const runner = process.env.BENCHMARK ? describe : describe.skip;
 
 /**
  * Clients
  */
 
-function Test(baseUrl) {
-  papi.Client.call(this, { baseUrl: baseUrl });
+class Test extends papi.Client {
+  constructor(baseUrl) {
+    super({ baseUrl: baseUrl });
+  }
+
+  test(path) {
+    return this._get({ path: path });
+  }
 }
 
-util.inherits(Test, papi.Client);
+const tests = {};
 
-Test.prototype.test = function(path, callback) {
-  this._get({ path: path }, callback);
-};
-
-var tests = {};
-
-tests.http = function(test) {
-  return function(i, next) {
-    var options = {
+tests.http = test => {
+  return (i, next) => {
+    const options = {
       hostname: test.address,
       port: test.port,
       path: test.path,
       method: 'GET',
     };
 
-    var req = http.request(options, function(res) {
-      var chunks = [];
+    const req = http.request(options, res => {
+      const chunks = [];
 
-      res.on('data', function(chunk) {
-        chunks.push(chunk);
-      });
+      res.on('data', chunk => chunks.push(chunk));
 
-      res.on('end', function() {
-        var body = JSON.parse(Buffer.concat(chunks).toString());
+      res.on('end', () => {
+        const body = JSON.parse(Buffer.concat(chunks).toString());
         should.equal(body.hello, 'world');
         next();
       });
@@ -60,35 +54,29 @@ tests.http = function(test) {
   };
 };
 
-tests.papi = function(test) {
-  return function(i, next) {
-    var client = new Test(test.baseUrl);
+tests.papi = test => {
+  return (i, next) => {
+    const client = new Test(test.baseUrl);
 
-    client.test(test.path, function(err, res) {
-      if (err) return next(err);
-
+    client.test(test.path).then(res => {
       should.equal(res.body.hello, 'world');
-
       next();
-    });
+    }, next);
   };
 };
 
-tests.shortcut = function(test) {
-  return function(i, next) {
-    papi.get(test.url, function(err, res) {
-      if (err) return next(err);
-
+tests.shortcut = test => {
+  return (i, next) => {
+    papi.get(test.url).then(res => {
       should.equal(res.body.hello, 'world');
-
       next();
-    });
+    }).catch(next);
   };
 };
 
-tests.request = function(test) {
-  return function(i, next) {
-    request({ uri: test.url, json: true }, function(err, res) {
+tests.request = test => {
+  return (i, next) => {
+    request({ uri: test.url, json: true }, (err, res) => {
       if (err) return next(err);
 
       should.equal(res.body.hello, 'world');
@@ -99,15 +87,15 @@ tests.request = function(test) {
 };
 
 function run(opts, next) {
-  var start = new Date();
+  const start = new Date();
 
   if (!opts.count) opts.count = 10000;
 
-  async.times(opts.count, opts.test, function(err) {
-    if (err) throw err;
+  async.times(opts.count, opts.test, err => {
+    if (err) return next(err);
 
-    var duration = new Date() - start;
-    var perSecond = opts.count / (duration / 1000);
+    const duration = new Date() - start;
+    let perSecond = opts.count / (duration / 1000);
 
     perSecond = parseInt(perSecond * 100, 10) / 100;
 
@@ -128,9 +116,7 @@ runner('Performance', function() {
   this.timeout(30 * 1000);
 
   before(function(done) {
-    var self = this;
-
-    self.server = http.createServer(function(req, res) {
+    this.server = http.createServer((req, res) => {
       res.writeHead(200, {
         'Content-Type': 'application/json',
       });
@@ -138,16 +124,19 @@ runner('Performance', function() {
       res.end('{"hello":"world"}');
     });
 
-    self.server.listen(0, function(err) {
+    this.server.listen(0, err => {
       if (err) return done(err);
 
-      var addr = self.server.address();
+      const addr = this.server.address();
 
-      self.address = addr.address;
-      self.port = addr.port;
-      self.baseUrl = 'http://' + addr.address + ':' + addr.port;
-      self.path = '/test';
-      self.url = self.baseUrl + self.path;
+      let hostname = addr.address;
+      if (addr.family === 'IPv6') hostname = '[' + hostname + ']';
+
+      this.address = addr.address;
+      this.port = addr.port;
+      this.baseUrl = 'http://' + hostname + ':' + addr.port;
+      this.path = '/test';
+      this.url = this.baseUrl + this.path;
 
       done();
     });
@@ -158,35 +147,26 @@ runner('Performance', function() {
   });
 
   it('should be ok', function(done) {
-    var self = this;
+    const jobs = [];
 
-    var jobs = [];
+    jobs.push(next => run({ name: 'Http', test: tests.http(this) }, next));
+    jobs.push(next => run({ name: 'Papi', test: tests.papi(this) }, next));
+    jobs.push(next =>
+      run({ name: 'Shortcut', test: tests.shortcut(this) }, next));
+    jobs.push(next =>
+      run({ name: 'Request', test: tests.request(this) }, next));
 
-    jobs.push(function(next) {
-      run({ name: 'Http', test: tests.http(self) }, next);
-    });
+    async.series(jobs, (err, results) => {
+      if (err) return done(err);
 
-    jobs.push(function(next) {
-      run({ name: 'Papi', test: tests.papi(self) }, next);
-    });
-
-    jobs.push(function(next) {
-      run({ name: 'Shortcut', test: tests.shortcut(self) }, next);
-    });
-
-    jobs.push(function(next) {
-      run({ name: 'Request', test: tests.request(self) }, next);
-    });
-
-    async.series(jobs, function(err, results) {
-      var data = {};
+      const data = {};
 
       console.log();
       console.log('    Name\t\tRate (req/s)\tDuration (ms)\tCount\tSlower');
 
-      var http = results[0];
+      const http = results[0];
 
-      results.forEach(function(r) {
+      results.forEach(r => {
         data[r.name.toLowerCase()] = r;
 
         console.log(util.format('    %s\t\t%s\t\t%s\t\t%s\t%sx',
@@ -200,8 +180,8 @@ runner('Performance', function() {
 
       console.log();
 
-      data.papi.duration.should.be.below(data.http.duration * 2);
-      data.shortcut.duration.should.be.below(data.http.duration * 2);
+      should(data.papi.duration).be.below(data.http.duration * 2);
+      should(data.shortcut.duration).be.below(data.http.duration * 2);
 
       done();
     });

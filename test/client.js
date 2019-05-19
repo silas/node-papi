@@ -2,46 +2,32 @@
 
 /* jshint expr: true */
 
-/**
- * Module dependencies.
- */
+const debug = require('debug')('papi');
+const events = require('events');
+const http = require('http');
+const https = require('https');
+const lodash = require('lodash');
+const nock = require('nock');
+const should = require('should');
+const sinon = require('sinon');
+const stream = require('stream');
+const url = require('url');
 
-var debug = require('debug')('papi');
-var events = require('events');
-var http = require('http');
-var https = require('https');
-var lodash = require('lodash');
-var nock = require('nock');
-var should = require('should');
-var sinon = require('sinon');
-var stream = require('stream');
-var url = require('url');
+const meta = require('../package.json');
+const papi = require('../lib');
 
-var meta = require('../package.json');
-var papi = require('../lib');
+const FORM = 'application/x-www-form-urlencoded';
+const CHARSET = 'charset=utf-8';
+const BASE_URL = 'http://example.org';
 
-/**
- * Helper
- */
-
-var FORM = 'application/x-www-form-urlencoded';
-var CHARSET = 'charset=utf-8';
-var BASE_URL = 'http://example.org';
-
-function make() {
-  return papi.Client(BASE_URL);
-}
-
-/**
- * Tests
- */
+const make = () => new papi.Client(BASE_URL);
 
 describe('Client', function() {
   describe('new', function() {
     it('should accept string as baseUrl', function() {
-      var client = make();
+      const client = make();
 
-      var baseUrl = client._opts.baseUrl;
+      const baseUrl = client._opts.baseUrl;
 
       should(baseUrl).eql({
         auth: null,
@@ -53,19 +39,19 @@ describe('Client', function() {
     });
 
     it('should not mutate options', function() {
-      var options = {
+      const options = {
         baseUrl: url.parse('http://example.org'),
         headers: { hello: 'world' },
         type: 'text',
-        encoders: { text: function() {} },
-        decoders: { text: function() {} },
+        encoders: { text: () => undefined },
+        decoders: { text: () => undefined },
         tags: ['test'],
         timeout: 123,
       };
 
-      var optionsClone = lodash.cloneDeep(options);
+      const optionsClone = lodash.cloneDeep(options);
 
-      var client = papi.Client(options);
+      const client = new papi.Client(options);
 
       client._opts.baseUrl.fail = true;
       client._opts.headers.fail = true;
@@ -79,9 +65,7 @@ describe('Client', function() {
     });
 
     it('should require baseUrl', function() {
-      (function() {
-        papi.Client();
-      }).should.throw(Error, {
+      should(() => new papi.Client()).throw(Error, {
         message: 'baseUrl required',
         isPapi: true,
         isValidation: true,
@@ -89,9 +73,7 @@ describe('Client', function() {
     });
 
     it('should require baseUrl be a string', function() {
-      (function() {
-        papi.Client({ baseUrl: 123 });
-      }).should.throw(Error, {
+      should(() => new papi.Client({ baseUrl: 123 })).throw(Error, {
         message: 'baseUrl must be a string: 123',
         isPapi: true,
         isValidation: true,
@@ -99,9 +81,9 @@ describe('Client', function() {
     });
 
     it('should require tags be an array', function() {
-      (function() {
-        papi.Client({ baseUrl: BASE_URL, tags: true });
-      }).should.throw(Error, {
+      should(() => {
+        new papi.Client({ baseUrl: BASE_URL, tags: true });
+      }).throw(Error, {
         message: 'tags must be an array',
         isPapi: true,
         isValidation: true,
@@ -109,9 +91,7 @@ describe('Client', function() {
     });
 
     it('should error on trailing slash', function() {
-      (function() {
-        papi.Client(BASE_URL + '/nope/');
-      }).should.throw(Error, {
+      should(() => new papi.Client(BASE_URL + '/nope/')).throw(Error, {
         message: 'baseUrl must not end with a forward slash',
         isPapi: true,
         isValidation: true,
@@ -125,84 +105,80 @@ describe('Client', function() {
     });
 
     it('should convert string to error', function() {
-      var err = make()._err('test');
+      const err = make()._err('test');
 
       should(err).be.instanceof(Error);
 
-      err.message.should.eql('test');
+      should(err.message).eql('test');
     });
 
     it('should not change error', function() {
-      var message = 'ok';
+      const message = 'ok';
 
-      var err1 = new Error(message);
-      var err2 = make()._err(err1);
+      const err1 = new Error(message);
+      const err2 = make()._err(err1);
 
       should(err2).be.instanceof(Error);
-      err2.should.equal(err1);
-      err2.message.should.eql(message);
+      should(err2).equal(err1);
+      should(err2.message).eql(message);
     });
 
     it('should add client name', function() {
-      var client = make();
+      const client = make();
 
       client._opts.name = 'client';
 
-      var err = client._err('ok');
+      const err = client._err('ok');
 
-      err.message.should.eql('client: ok');
+      should(err.message).eql('client: ok');
     });
 
     it('should add opts name', function() {
-      var opts = { name: 'opts' };
+      const opts = { name: 'opts' };
 
-      var err = make()._err('ok', opts);
+      const err = make()._err('ok', opts);
 
-      err.message.should.eql('opts: ok');
+      should(err.message).eql('opts: ok');
     });
 
     it('should add client and opts name', function() {
-      var client = make();
+      const client = make();
 
       client._opts.name = 'client';
 
-      var err = client._err('ok', { name: 'opts' });
+      const err = client._err('ok', { name: 'opts' });
 
-      err.message.should.eql('client: opts: ok');
+      should(err.message).eql('client: opts: ok');
     });
   });
 
   describe('ext', function() {
     it('should register extension', function() {
-      var client = make();
+      const client = make();
 
-      client._exts.should.be.empty;
+      should(client._exts).be.empty;
 
-      var name = 'test';
-
-      client._ext(name, lodash.noop);
-
-      client._exts.should.have.keys(name);
-      client._exts[name].should.be.instanceof(Array);
-      client._exts[name].should.eql([lodash.noop]);
+      const name = 'test';
 
       client._ext(name, lodash.noop);
 
-      client._exts[name].should.eql([lodash.noop, lodash.noop]);
+      should(client._exts).have.keys(name);
+      should(client._exts[name]).be.instanceof(Array);
+      should(client._exts[name]).eql([lodash.noop]);
+
+      client._ext(name, lodash.noop);
+
+      should(client._exts[name]).eql([lodash.noop, lodash.noop]);
     });
 
     it('should require an event name', function() {
-      (function() {
-        make()._ext();
-      }).should.throw(Error, {
+      should(() => make()._ext()).throw(Error, {
         message: 'extension eventName required',
         isPapi: true,
         isValidation: true,
       });
 
-      (function() {
-        make()._ext(true);
-      }).should.throw(Error, {
+      should(() => make()._ext(true)).throw(Error, {
         message: 'extension eventName required',
         isPapi: true,
         isValidation: true,
@@ -210,9 +186,7 @@ describe('Client', function() {
     });
 
     it('should require callback', function() {
-      (function() {
-        make()._ext('test');
-      }).should.throw(Error, {
+      should(() => make()._ext('test')).throw(Error, {
         message: 'extension callback required',
         isPapi: true,
         isValidation: true,
@@ -222,14 +196,14 @@ describe('Client', function() {
 
   describe('plugin', function() {
     it('should register', function(done) {
-      var client = make();
+      const client = make();
 
-      var options = {};
-      var plugin = {};
+      const options = {};
+      const plugin = {};
 
-      plugin.register = function(pluginClient, pluginOptions) {
-        pluginClient.should.equal(client);
-        pluginOptions.should.equal(options);
+      plugin.register = (pluginClient, pluginOptions) => {
+        should(pluginClient).equal(client);
+        should(pluginOptions).equal(options);
 
         done();
       };
@@ -243,9 +217,7 @@ describe('Client', function() {
     });
 
     it('should require plugin option', function() {
-      (function() {
-        make()._plugin();
-      }).should.throw(Error, {
+      should(() => make()._plugin()).throw(Error, {
         message: 'plugin required',
         isPapi: true,
         isValidation: true,
@@ -253,13 +225,11 @@ describe('Client', function() {
     });
 
     it('should require register be a function', function() {
-      var plugin = {
+      const plugin = {
         register: {},
       };
 
-      (function() {
-        make()._plugin(plugin);
-      }).should.throw(Error, {
+      should(() => make()._plugin(plugin)).throw(Error, {
         message: 'plugin must have register function',
         isPapi: true,
         isValidation: true,
@@ -267,13 +237,11 @@ describe('Client', function() {
     });
 
     it('should require attributes', function() {
-      var plugin = {
-        register: function() {},
+      const plugin = {
+        register: () => {},
       };
 
-      (function() {
-        make()._plugin(plugin);
-      }).should.throw(Error, {
+      should(() => make()._plugin(plugin)).throw(Error, {
         message: 'plugin attributes required',
         isPapi: true,
         isValidation: true,
@@ -281,15 +249,13 @@ describe('Client', function() {
     });
 
     it('should require attributes name', function() {
-      var plugin = {
-        register: function() {},
+      const plugin = {
+        register: () => {},
       };
 
       plugin.register.attributes = {};
 
-      (function() {
-        make()._plugin(plugin);
-      }).should.throw(Error, {
+      should(() => make()._plugin(plugin)).throw(Error, {
         message: 'plugin attributes name required',
         isPapi: true,
         isValidation: true,
@@ -297,17 +263,15 @@ describe('Client', function() {
     });
 
     it('should require attributes version', function() {
-      var plugin = {
-        register: function() {},
+      const plugin = {
+        register: () => {},
       };
 
       plugin.register.attributes = {
         name: 'test',
       };
 
-      (function() {
-        make()._plugin(plugin);
-      }).should.throw(Error, {
+      should(() => make()._plugin(plugin)).throw(Error, {
         message: 'plugin attributes version required',
         isPapi: true,
         isValidation: true,
@@ -315,8 +279,8 @@ describe('Client', function() {
     });
 
     it('should set default options', function(done) {
-      var plugin = {
-        register: function(client, options) {
+      const plugin = {
+        register: (client, options) => {
           should.exist(options);
 
           done();
@@ -334,11 +298,11 @@ describe('Client', function() {
 
   describe('log', function() {
     it('should emit logs', function(done) {
-      var client = make();
+      const client = make();
 
-      client.on('log', function(tags, data) {
-        tags.should.eql(['tag1', 'tag2']);
-        data.should.eql('done');
+      client.on('log', (tags, data) => {
+        should(tags).eql(['tag1', 'tag2']);
+        should(data).eql('done');
 
         done();
       });
@@ -349,9 +313,7 @@ describe('Client', function() {
 
   describe('encode', function() {
     it('should throw on unknown encoder', function() {
-      (function() {
-        make()._encode('fail');
-      }).should.throw(Error, {
+      should(() => make()._encode('fail')).throw(Error, {
         message: 'unknown encoder: fail',
         isPapi: true,
         isCodec: true,
@@ -359,14 +321,12 @@ describe('Client', function() {
     });
 
     it('should throw on invalid content', function() {
-      var data = {};
+      const data = {};
       data[data] = data;
 
-      (function() {
-        make()._encode('application/json', data);
-      }).should.throw(Error, {
-        message: 'encode (application/json) failed: ' +
-                 'Converting circular structure to JSON',
+      should(() => make()._encode('application/json', data)).throw(Error, {
+        message: new RegExp('^encode \\(application/json\\) failed: ' +
+                            'Converting circular structure to JSON.*'),
         isPapi: true,
         isCodec: true,
       });
@@ -375,9 +335,7 @@ describe('Client', function() {
 
   describe('decode', function() {
     it('should throw on unknown decoder', function() {
-      (function() {
-        make()._decode('fail');
-      }).should.throw(Error, {
+      should(() => make()._decode('fail')).throw(Error, {
         message: 'unknown decoder: fail',
         isPapi: true,
         isCodec: true,
@@ -385,7 +343,7 @@ describe('Client', function() {
     });
 
     it('should throw on invalid content', function() {
-      should(function() {
+      should(() => {
         make()._decode('application/json', '<html>');
       }).throw(Error, function(err) {
         should(err.message)
@@ -398,25 +356,25 @@ describe('Client', function() {
 
   describe('push', function() {
     it('should push method item', function() {
-      var request = {
+      const request = {
         _stack: [],
         opts: { exts: { test: lodash.noop } },
       };
 
       make().__push(request, 'test');
 
-      request._stack.should.eql([lodash.noop]);
+      should(request._stack).eql([lodash.noop]);
     });
 
     it('should push client and method items', function() {
-      var client = make();
+      const client = make();
 
-      var one = function() {};
-      var two = function() {};
+      const one = () => {};
+      const two = () => {};
 
       client._ext('test', one);
 
-      var request = {
+      const request = {
         _stack: [],
         opts: { exts: {} },
       };
@@ -425,127 +383,178 @@ describe('Client', function() {
 
       client.__push(request, 'test');
 
-      request._stack.should.eql([one, two]);
+      should(request._stack).eql([one, two]);
     });
   });
 
   describe('request', function() {
     beforeEach(function() {
-      this.client = papi.Client({
+      this.client = new papi.Client({
         baseUrl: BASE_URL,
         headers: { key: 'value' },
         name: 'testclient',
       });
     });
 
-    it('should not crash with null opts', function(done) {
-      this.client._request(null, function(err) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: path required');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        done();
-      });
+    it('should not crash with null opts', async function() {
+      try {
+        await this.client._request();
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: path required');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isValidation', true);
+      }
     });
 
-    it('should not crash helper methods with null opts', function(done) {
-      this.client._get(null, function(err) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: path required');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        done();
-      });
+    it('should not crash helper methods with null opts', async function() {
+      try {
+        await this.client._get();
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: path required');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isValidation', true);
+      }
     });
 
-    it('should emit error when no callback provided', function(done) {
-      this.client.on('error', function(err) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: callback required');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        done();
-      });
-
-      this.client._get('/get');
-    });
-
-    it('should require all params', function(done) {
-      var req = {
+    it('should require all params', async function() {
+      const req = {
         path: '/one/{two}',
       };
 
-      this.client._get(req, function(err) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: missing param: two');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        done();
-      });
+      try {
+        await this.client._get(req);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: missing param: two');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isValidation', true);
+      }
     });
 
-    it('should handle query encode errors', function(done) {
-      var req = {
+    it('should handle query encode errors', async function() {
+      const req = {
         path: '/get',
         query: 'fail',
       };
 
-      var mime = 'application/x-www-form-urlencoded';
+      const mime = 'application/x-www-form-urlencoded';
 
-      this.client._opts.encoders[mime] = function() {
+      this.client._opts.encoders[mime] = () => {
         throw new Error('something went wrong');
       };
 
-      this.client._get(req, function(err) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: encode (' + mime +
-          ') ' + 'failed: something went wrong');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isCodec', true);
-
-        done();
-      });
+      try {
+        await this.client._get(req);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: encode (' + mime +
+            ') ' + 'failed: something went wrong');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isCodec', true);
+      }
     });
 
-    it('should handle body encode errors', function(done) {
-      var data = {};
+    it('should handle body encode errors', async function() {
+      const data = {};
       data[data] = data;
 
-      var req = {
+      const req = {
         path: '/get',
         type: 'json',
         body: data,
       };
 
-      this.client._post(req, function(err) {
+      try {
+        await this.client._post(req);
+        should.fail();
+      } catch (err) {
         should.exist(err);
-        err.should.have.property('message', 'testclient: encode ' +
-          '(application/json) failed: Converting circular structure to JSON');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isCodec', true);
+        should(err).have.property('message');
+        should(err.message).match(new RegExp('^testclient: encode ' +
+            '\\(application/json\\) failed: Converting circular structure to ' +
+            'JSON.*'));
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isCodec', true);
+      }
+    });
+  });
 
-        done();
+  describe('pipeline', function() {
+    beforeEach(function() {
+      this.client = new papi.Client({ baseUrl: BASE_URL });
+      this.request = { _stack: [] };
+      this.promise = new Promise((resolve, reject) => {
+        this.request._resolve = resolve;
+        this.request._reject = reject;
       });
+    });
+
+    it('should handle empty stack', async function() {
+      this.request.res = 'ok';
+      this.client.__pipeline(this.request);
+      should(await this.promise).eql('ok');
+    });
+
+    it('should handle error', function() {
+      function error(request, next) {
+        next(new Error('error'));
+      }
+
+      this.request._stack = [error];
+      this.client.__pipeline(this.request);
+
+      return should(this.promise).rejectedWith('error');
+    });
+
+    it('should handle value', async function() {
+      function value(request, next) {
+        next(false, 'value');
+      }
+
+      this.request._stack = [value];
+      this.client.__pipeline(this.request);
+
+      return should(await this.promise).eql('value');
+    });
+
+    it('should handle legacy callback error', function() {
+      function error(request, next) {
+        next(false, new Error('legacy error'));
+      }
+
+      this.request._stack = [error];
+      this.client.__pipeline(this.request);
+
+      return should(this.promise).rejectedWith('legacy error');
+    });
+
+    it('should handle legacy callback value', async function() {
+      function value(request, next) {
+        next(false, null, 'legacy value');
+      }
+
+      this.request._stack = [value];
+      this.client.__pipeline(this.request);
+
+      return should(await this.promise).eql('legacy value');
     });
   });
 
   describe('http', function() {
     beforeEach(function() {
-      var self = this;
+      const self = this;
 
-      self.sinon = sinon.sandbox.create();
+      self.sinon = sinon.createSandbox();
 
       self.http = {};
       self.https = {};
 
       function request(type) {
-        return function(opts) {
-          var req = self[type].req = new events.EventEmitter();
-          var res = self[type].res = new events.EventEmitter();
+        return opts => {
+          const req = self[type].req = new events.EventEmitter();
+          const res = self[type].res = new events.EventEmitter();
 
           res.statusCode = 200;
           res.headers = {};
@@ -554,27 +563,27 @@ describe('Client', function() {
             remotePort: 80,
           };
 
-          req.abort = function() {
+          req.abort = () => {
             opts._aborted = true;
           };
 
-          req.getHeader = function(name) {
+          req.getHeader = name => {
             return opts.headers[name.toLowerCase()];
           };
 
-          req.setHeader = function(name, value) {
+          req.setHeader = (name, value) => {
             opts.headers[name.toLowerCase()] = value;
           };
 
-          req.removeHeader = function(name) {
+          req.removeHeader = (name) => {
             delete opts.headers[name.toLowerCase()];
           };
 
-          req.setTimeout = function(timeout) {
+          req.setTimeout = (timeout) => {
             self.timeout = timeout;
           };
 
-          req.end = function() {
+          req.end = () => {
             self[type].opts = opts;
 
             req.emit('response', res);
@@ -584,8 +593,8 @@ describe('Client', function() {
         };
       }
 
-      self.sinon.stub(http, 'request', request('http'));
-      self.sinon.stub(https, 'request', request('https'));
+      self.sinon.stub(http, 'request').callsFake(request('http'));
+      self.sinon.stub(https, 'request').callsFake(request('https'));
     });
 
     afterEach(function() {
@@ -593,15 +602,13 @@ describe('Client', function() {
     });
 
     it('should handle http', function() {
-      var self = this;
+      const protocol = 'http:';
+      const hostname = 'example.org';
+      const method = 'GET';
 
-      var protocol = 'http:';
-      var hostname = 'example.org';
-      var method = 'GET';
+      const baseUrl = protocol + '//' + hostname;
 
-      var baseUrl = protocol + '//' + hostname;
-
-      var client = papi.Client({
+      const client = new papi.Client({
         baseUrl: baseUrl,
         timeout: 1000,
         agent: false,
@@ -609,8 +616,8 @@ describe('Client', function() {
 
       client._get('/one', lodash.noop);
 
-      process.nextTick(function() {
-        should(self.http.opts).eql({
+      process.nextTick(() => {
+        should(this.http.opts).eql({
           headers: { 'user-agent': 'papi/' + meta.version },
           hostname: hostname,
           method: method,
@@ -621,27 +628,97 @@ describe('Client', function() {
       });
     });
 
+    it('should handle options', function() {
+      const client = new papi.Client({ baseUrl: 'http://example.org' });
+      client._options('/options', lodash.noop);
+
+      process.nextTick(() => {
+        should(this.http.opts).have.property('method', 'OPTIONS');
+      });
+    });
+
+    it('should handle get', function() {
+      const client = new papi.Client({ baseUrl: 'http://example.org' });
+      client._get('/get', lodash.noop);
+
+      process.nextTick(() => {
+        should(this.http.opts).have.property('method', 'GET');
+      });
+    });
+
+    it('should handle head', function() {
+      const client = new papi.Client({ baseUrl: 'http://example.org' });
+      client._head('/head', lodash.noop);
+
+      process.nextTick(() => {
+        should(this.http.opts).have.property('method', 'HEAD');
+      });
+    });
+
+    it('should handle post', function() {
+      const client = new papi.Client({ baseUrl: 'http://example.org' });
+      client._post('/post', lodash.noop);
+
+      process.nextTick(() => {
+        should(this.http.opts).have.property('method', 'POST');
+      });
+    });
+
+    it('should handle put', function() {
+      const client = new papi.Client({ baseUrl: 'http://example.org' });
+      client._put('/put', lodash.noop);
+
+      process.nextTick(() => {
+        should(this.http.opts).have.property('method', 'PUT');
+      });
+    });
+
+    it('should handle delete', function() {
+      const client = new papi.Client({ baseUrl: 'http://example.org' });
+      client._delete('/delete', lodash.noop);
+
+      process.nextTick(() => {
+        should(this.http.opts).have.property('method', 'DELETE');
+      });
+    });
+
+    it('should handle del', function() {
+      const client = new papi.Client({ baseUrl: 'http://example.org' });
+      client._del('/del', lodash.noop);
+
+      process.nextTick(() => {
+        should(this.http.opts).have.property('method', 'DELETE');
+      });
+    });
+
+    it('should handle patch', function() {
+      const client = new papi.Client({ baseUrl: 'http://example.org' });
+      client._patch('/patch', lodash.noop);
+
+      process.nextTick(() => {
+        should(this.http.opts).have.property('method', 'PATCH');
+      });
+    });
+
     it('should handle http explicit', function(done) {
-      var self = this;
+      const protocol = 'http:';
+      const auth = 'user:pass';
+      const port = '8000';
+      const hostname = 'example.org';
+      const method = 'GET';
 
-      var protocol = 'http:';
-      var auth = 'user:pass';
-      var port = '8000';
-      var hostname = 'example.org';
-      var method = 'GET';
-
-      var baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
+      const baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
         '/one';
 
-      var client = papi.Client({
+      const client = new papi.Client({
         baseUrl: baseUrl,
         headers: { 'user-agent': null },
       });
 
       client._get('/two', lodash.noop);
 
-      process.nextTick(function() {
-        should(self.http.opts).eql({
+      process.nextTick(() => {
+        should(this.http.opts).eql({
           auth: auth,
           headers: {},
           hostname: hostname,
@@ -655,17 +732,15 @@ describe('Client', function() {
     });
 
     it('should handle https', function(done) {
-      var self = this;
+      const protocol = 'https:';
+      const hostname = 'example.org';
+      const method = 'GET';
 
-      var protocol = 'https:';
-      var hostname = 'example.org';
-      var method = 'GET';
+      const baseUrl = protocol + '//' + hostname;
 
-      var baseUrl = protocol + '//' + hostname;
+      const client = new papi.Client({ baseUrl: baseUrl });
 
-      var client = papi.Client({ baseUrl: baseUrl });
-
-      var opts = {
+      const opts = {
         path: '/one',
         agent: false,
         key: 'key',
@@ -677,8 +752,8 @@ describe('Client', function() {
 
       client._get(opts, lodash.noop);
 
-      process.nextTick(function() {
-        should(self.https.opts).eql({
+      process.nextTick(() => {
+        should(this.https.opts).eql({
           headers: { 'user-agent': 'papi/' + meta.version },
           hostname: hostname,
           method: method,
@@ -697,23 +772,21 @@ describe('Client', function() {
     });
 
     it('should handle https explicit', function(done) {
-      var self = this;
+      const protocol = 'https:';
+      const auth = 'user:pass';
+      const port = '4433';
+      const hostname = 'example.org';
+      const method = 'GET';
 
-      var protocol = 'https:';
-      var auth = 'user:pass';
-      var port = '4433';
-      var hostname = 'example.org';
-      var method = 'GET';
-
-      var baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
+      const baseUrl = protocol + '//' + auth + '@' + hostname + ':' + port +
         '/one';
 
-      var client = papi.Client({ baseUrl: baseUrl });
+      const client = new papi.Client({ baseUrl: baseUrl });
 
       client._get('/two', lodash.noop);
 
-      process.nextTick(function() {
-        should(self.https.opts).eql({
+      process.nextTick(() => {
+        should(this.https.opts).eql({
           auth: auth,
           headers: { 'user-agent': 'papi/' + meta.version },
           hostname: hostname,
@@ -727,22 +800,20 @@ describe('Client', function() {
     });
 
     it('should handle multiple events with abort', function(done) {
-      var self = this;
+      const client = new papi.Client({ baseUrl: 'http://example.org' });
+      let called = 0;
+      let errors = 0;
 
-      var client = papi.Client({ baseUrl: 'http://example.org' });
-      var called = 0;
-      var errors = 0;
-
-      var opts = {
+      const opts = {
         path: '/one',
         ctx: new events.EventEmitter(),
       };
 
-      client._get(opts, function() {
+      client._get(opts, () => {
         if (!called) {
-          self.http.req.on('error', function() {
+          this.http.req.on('error', () => {
             if (!errors) {
-              called.should.equal(1);
+              should(called).equal(1);
               done();
             }
             errors++;
@@ -751,10 +822,10 @@ describe('Client', function() {
 
         called++;
 
-        for (var i = 0; i < 2; i++) {
-          self.http.req.emit('error', new Error('req error'));
-          self.http.req.emit('timeout', new Error('req timeout'));
-          self.http.res.emit('end');
+        for (let i = 0; i < 2; i++) {
+          this.http.req.emit('error', new Error('req error'));
+          this.http.req.emit('timeout', new Error('req timeout'));
+          this.http.res.emit('end');
         }
       });
 
@@ -762,22 +833,20 @@ describe('Client', function() {
     });
 
     it('should handle multiple events with timeout', function(done) {
-      var self = this;
+      const client = new papi.Client({ baseUrl: 'http://example.org' });
+      let called = 0;
+      let errors = 0;
 
-      var client = papi.Client({ baseUrl: 'http://example.org' });
-      var called = 0;
-      var errors = 0;
-
-      var opts = {
+      const opts = {
         path: '/one',
         timeout: 10,
       };
 
-      client._get(opts, function() {
+      client._get(opts, () => {
         if (!called) {
-          self.http.req.on('error', function() {
+          this.http.req.on('error', () => {
             if (!errors) {
-              called.should.equal(1);
+              should(called).equal(1);
               done();
             }
             errors++;
@@ -786,10 +855,10 @@ describe('Client', function() {
 
         called++;
 
-        for (var i = 0; i < 2; i++) {
-          self.http.req.emit('error', new Error('req error'));
-          self.http.req.emit('timeout', new Error('req timeout'));
-          self.http.res.emit('end');
+        for (let i = 0; i < 2; i++) {
+          this.http.req.emit('error', new Error('req error'));
+          this.http.req.emit('timeout', new Error('req timeout'));
+          this.http.res.emit('end');
         }
       });
     });
@@ -807,7 +876,7 @@ describe('Client', function() {
     beforeEach(function() {
       this.baseUrl = 'http://example.org';
 
-      this.client = papi.Client({
+      this.client = new papi.Client({
         baseUrl: this.baseUrl,
         headers: { key: 'value' },
         name: 'testclient',
@@ -817,37 +886,25 @@ describe('Client', function() {
       this.nock = nock(this.baseUrl);
     });
 
-    it('should GET text/plain', function(done) {
+    it('should GET text/plain', async function() {
       this.nock
         .get('/get')
         .reply(200, 'ok', { 'content-type': 'text/plain' });
 
-      this.client._get('/get', function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-        should(res.body).eql('ok');
-
-        done();
-      });
+      const res = await this.client._get('/get');
+      should(res).have.property('body','ok');
     });
 
-    it('should GET text/html', function(done) {
+    it('should GET text/html', async function() {
       this.nock
         .get('/get')
         .reply(200, 'ok', { 'content-type': 'text/html' });
 
-      this.client._get('/get', function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-        should(res.body).eql('ok');
-
-        done();
-      });
+      const res = await this.client._get('/get');
+      should(res).have.property('body','ok');
     });
 
-    it('should GET application/json', function(done) {
+    it('should GET application/json', async function() {
       this.nock
         .get('/get')
         .reply(200,
@@ -855,105 +912,77 @@ describe('Client', function() {
           { 'content-type': 'application/json' }
         );
 
-      this.client._get('/get', function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-        should(res.body).eql({ is: 'ok' });
-
-        res.statusCode.should.eql(200);
-
-        done();
-      });
+      const res = await this.client._get('/get');
+      should(res).have.property('body',{ is: 'ok' });
+      should(res).have.property('statusCode', 200);
     });
 
-    it('should return buffer', function(done) {
+    it('should return buffer', async function() {
       this.nock
         .get('/get')
         .reply(200, 'ok');
 
-      this.client._get('/get', function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-        should.exist(res.body);
-        res.body.should.be.instanceof(Buffer);
-        res.body.length.should.eql(2);
-
-        res.statusCode.should.eql(200);
-
-        done();
-      });
+      const res = await this.client._get('/get');
+      should(res).have.property('body');
+      should(res.body).be.instanceof(Buffer);
+      should(res.body).have.property('length', 2);
+      should(res).have.property('statusCode', 200);
     });
 
-    it('should return buffer for known content-types', function(done) {
+    it('should return buffer for known content-types', async function() {
       this.nock
         .get('/get')
         .reply(200, { hello: 'world' });
 
-      var opts = {
+      const opts = {
         path: '/get',
         buffer: true,
       };
 
-      this.client._get(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-        should.exist(res.body);
-        res.body.should.be.instanceof(Buffer);
-        res.body.toString().should.eql('{"hello":"world"}');
-
-        res.statusCode.should.eql(200);
-
-        done();
-      });
+      const res = await this.client._get(opts);
+      should(res).have.property('body');
+      should(res.body).be.instanceof(Buffer);
+      should(res.body.toString()).eql('{"hello":"world"}');
+      should(res).have.property('statusCode', 200);
     });
 
-    it('should handle response decode errors', function(done) {
+    it('should handle response decode errors', async function() {
       this.nock
         .get('/get')
         .reply(200, '<html>', { 'content-type': 'application/json' });
 
-      this.client._get('/get', function(err, res) {
+      try {
+        await this.client._get('/get');
+        should.fail();
+      } catch (err) {
         should.exist(err);
         should(err.message).startWith('testclient: decode (application/json) ' +
             'failed: Unexpected token <');
         should(err).have.property('isPapi', true);
         should(err).have.property('isCodec', true);
-
-        res.body.toString().should.eql('<html>');
-
-        done();
-      });
+      }
     });
 
-    it('should create request with path replacement', function(done) {
+    it('should create request with path replacement', async function() {
       this.nock
         .get('/hello%20world/0/hello%20world/2/')
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/{saying}/0/{saying}/{count}/',
         params: { saying: 'hello world', count: 2 },
       };
 
-      this.client._get(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-        res.statusCode.should.eql(200);
-
-        done();
-      });
+      const res = await this.client._get(opts);
+      should(res).have.property('statusCode', 200);
     });
 
-    it('should support unescaped path params', function(done) {
+    it('should support unescaped path params', async function() {
       this.nock
         .get('/hello%2Bworld/')
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/{test}/{extra}',
         params: { extra: null },
       };
@@ -961,240 +990,178 @@ describe('Client', function() {
       opts.params.test = Buffer.from('hello%2Bworld');
       opts.params.test.encode = false;
 
-      this.client._get(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-        res.statusCode.should.eql(200);
-
-        done();
-      });
+      const res = await this.client._get(opts);
+      should(res).have.property('statusCode', 200);
     });
 
-    it('should create request with query parameters', function(done) {
+    it('should create request with query parameters', async function() {
       this.nock
         .get('/get?one=one&two=two1&two=two2')
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/get',
         query: { one: 'one', two: ['two1', 'two2'] },
       };
 
-      this.client._get(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-        res.statusCode.should.eql(200);
-
-        done();
-      });
+      const res = await this.client._get(opts);
+      should(res).have.property('statusCode', 200);
     });
 
-    it('should set default user-agent', function(done) {
+    it('should set default user-agent', async function() {
       this.nock
         .get('/get')
         .matchHeader('user-agent', 'papi/' + meta.version)
         .reply(200);
 
-      this.client._get('/get', function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._get('/get');
     });
 
-    it('should use custom user-agent', function(done) {
+    it('should use custom user-agent', async function() {
       this.nock
         .get('/get')
         .matchHeader('user-agent', 'foo')
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/get',
         headers: { 'User-Agent': 'foo' },
       };
 
-      this.client._get(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._get(opts);
     });
 
-    it('should use default headers', function(done) {
+    it('should use default headers', async function() {
       this.nock
         .get('/get')
         .matchHeader('key', 'value')
         .matchHeader('myKey', 'myValue')
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/get',
         headers: { myKey: 'myValue' },
       };
 
-      this.client._get(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._get(opts);
     });
 
-    it('should use passed over default headers', function(done) {
+    it('should use passed over default headers', async function() {
       this.nock
         .get('/get')
         .matchHeader('key', 'value')
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/get',
         headers: { key: 'value' },
       };
 
-      this.client._request(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._request(opts);
     });
 
-    it('should handle Buffer body', function(done) {
+    it('should handle Buffer body', async function() {
       this.nock
         .post('/post', 'test')
         .matchHeader('content-type', 'custom')
         .matchHeader('content-length', 4)
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/post',
         body: Buffer.from('test'),
         headers: { 'content-type': 'custom' },
       };
 
-      this.client._post(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._post(opts);
     });
 
-    it('should handle function body', function(done) {
+    it('should handle function body', async function() {
       this.nock
         .post('/post', 'test')
         .matchHeader('content-type', 'custom')
         .matchHeader('content-length', 4)
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/post',
-        body: function() { return Buffer.from('test'); },
+        body: () => Buffer.from('test'),
         headers: { 'content-type': 'custom' },
       };
 
-      this.client._post(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._post(opts);
     });
 
-    it('should catch function body errors', function(done) {
-      var opts = {
+    it('should catch function body errors', async function() {
+      const opts = {
         path: '/post',
-        body: function() { throw new Error('body'); },
+        body: () => { throw new Error('body'); },
         type: 'json',
       };
 
-      this.client._post(opts, function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: body');
-        err.should.not.have.property('isPapi');
-
-        should.not.exist(res);
-
-        done();
-      });
+      try {
+        await this.client._post(opts);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: body');
+        should(err).not.have.property('isPapi');
+      }
     });
 
-    it('should handle stream.Readable body', function(done) {
+    it('should handle stream.Readable body', async function() {
       this.nock
         .post('/post', 'test')
         .reply(200);
 
-      var body = new stream.Readable();
+      const body = new stream.Readable();
 
       body.push(Buffer.from('test'));
       body.push(null);
 
-      var opts = {
+      const opts = {
         path: '/post',
         body: body,
       };
 
-      this.client._post(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._post(opts);
     });
 
-    it('should handle stream.Writable pipe', function(done) {
+    it('should handle stream.Writable pipe', async function() {
       this.nock
         .get('/get')
         .reply(200, { hello: 'world' });
 
-      var chunks = [];
+      const chunks = [];
 
-      var bodyPipe = new stream.Writable();
+      const bodyPipe = new stream.Writable();
 
-      bodyPipe._write = function(chunk, encoding, callback) {
+      bodyPipe._write = (chunk, encoding, callback) => {
         chunks.push(chunk);
 
         callback();
       };
 
-      var opts = {
+      const opts = {
         path: '/get',
         pipe: bodyPipe,
       };
 
-      this.client._get(opts, function(err, res) {
-        should.not.exist(err);
+      await this.client._get(opts);
 
-        should.exist(res);
-
-        Buffer.concat(chunks).toString().should.eql('{"hello":"world"}');
-
-        done();
-      });
+      should(Buffer.concat(chunks).toString()).eql('{"hello":"world"}');
     });
 
-    it('should handle function stream.Writable pipe', function(done) {
+    it('should handle function stream.Writable pipe', async function() {
       this.nock
         .get('/get')
         .reply(200, { hello: 'world' });
 
-      var chunks = [];
+      const chunks = [];
 
-      var bodyPipe = function() {
-        var s = new stream.Writable();
+      const bodyPipe = () => {
+        const s = new stream.Writable();
 
-        s._write = function(chunk, encoding, callback) {
+        s._write = (chunk, encoding, callback) => {
           chunks.push(chunk);
 
           callback();
@@ -1203,291 +1170,240 @@ describe('Client', function() {
         return s;
       };
 
-      var opts = {
+      const opts = {
         path: '/get',
         pipe: bodyPipe,
       };
 
-      this.client._get(opts, function(err, res) {
-        should.not.exist(err);
+      await this.client._get(opts);
 
-        should.exist(res);
-
-        Buffer.concat(chunks).toString().should.eql('{"hello":"world"}');
-
-        done();
-      });
+      should(Buffer.concat(chunks).toString()).eql('{"hello":"world"}');
     });
 
-    it('should require stream.Writable for pipe', function(done) {
-      var opts = {
+    it('should require stream.Writable for pipe', async function() {
+      const opts = {
         path: '/get',
         pipe: true,
       };
 
-      this.client._get(opts, function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: pipe must be a ' +
+      try {
+        await this.client._get(opts);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: pipe must be a ' +
           'writable stream');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        should.not.exist(res);
-
-        done();
-      });
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isValidation', true);
+      }
     });
 
-    it('should error error on function pipe', function(done) {
-      var bodyPipe = function() { throw new Error('pipe'); };
+    it('should error error on function pipe', async function() {
+      const bodyPipe = () => { throw new Error('pipe'); };
 
-      var opts = {
+      const opts = {
         path: '/get',
         pipe: bodyPipe,
       };
 
-      this.client._get(opts, function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: pipe');
-        err.should.not.have.property('isPapi');
-
-        should.not.exist(res);
-
-        done();
-      });
+      try {
+        await this.client._get(opts);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: pipe');
+        should(err).not.have.property('isPapi');
+      }
     });
 
-    it('should POST application/x-www-form-urlencoded', function(done) {
+    it('should POST application/x-www-form-urlencoded', async function() {
       this.nock
         .post('/post', 'hello=world')
         .matchHeader('content-type', FORM + '; ' + CHARSET)
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/post',
         type: 'form',
         body: { hello: 'world' },
       };
 
-      this.client._post(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._post(opts);
     });
 
-    it('should DELETE', function(done) {
+    it('should DELETE', async function() {
       this.nock
         .delete('/delete')
         .reply(204);
 
-      this.client._delete('/delete', function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._delete('/delete');
     });
 
-    it('should PATCH application/json', function(done) {
+    it('should PATCH application/json', async function() {
       this.nock
         .patch('/patch', { hello: 'world' })
         .reply(204);
 
-      var opts = {
+      const opts = {
         path: '/patch',
         type: 'json',
         body: { hello: 'world' },
       };
 
-      this.client._patch(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._patch(opts);
     });
 
-    it('should error for unknown type', function(done) {
-      var opts = {
+    it('should error for unknown type', async function() {
+      const opts = {
         path: '/patch',
         body: { hello: 'world' },
       };
 
-      this.client._patch(opts, function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: type required');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        should.not.exist(res);
-
-        done();
-      });
+      try {
+        await this.client._patch(opts);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: type required');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isValidation', true);
+      }
     });
 
-    it('should require path', function(done) {
-      this.client._request({}, function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: path required');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        should.not.exist(res);
-
-        done();
-      });
+    it('should require path', async function() {
+      try {
+        await this.client._request({});
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: path required');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isValidation', true);
+      }
     });
 
-    it('should return error when ctx is canceled', function(done) {
-      var ctx = new events.EventEmitter();
+    it('should return error when ctx is canceled', async function() {
+      const ctx = new events.EventEmitter();
       ctx.canceled = true;
 
-      var opts = { path: '/get', ctx: ctx };
+      const opts = { path: '/get', ctx: ctx };
 
-      this.client._request(opts, function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: ctx already canceled');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        should.not.exist(res);
-
-        done();
-      });
+      try {
+        await this.client._request(opts);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message',
+          'testclient: ctx already canceled');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isValidation', true);
+      }
     });
 
-    it('should return error when ctx is finished', function(done) {
-      var ctx = new events.EventEmitter();
+    it('should return error when ctx is finished', async function() {
+      const ctx = new events.EventEmitter();
       ctx.finished = true;
 
-      var opts = { path: '/get', ctx: ctx };
+      const opts = { path: '/get', ctx: ctx };
 
-      this.client._request(opts, function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: ctx already finished');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        should.not.exist(res);
-
-        done();
-      });
+      try {
+        await this.client._request(opts);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message',
+          'testclient: ctx already finished');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isValidation', true);
+      }
     });
 
-    it('should use content-type for type', function(done) {
+    it('should use content-type for type', async function() {
       this.nock
         .patch('/patch', { hello: 'world' })
         .reply(204);
 
-      var opts = {
+      const opts = {
         path: '/patch',
         headers: { 'content-type': 'application/json' },
         body: { hello: 'world' },
       };
 
-      this.client._patch(opts, function(err, res) {
-        should.not.exist(err);
-
-        should.exist(res);
-
-        done();
-      });
+      await this.client._patch(opts);
     });
 
-    it('should throw error for unknown content-type', function(done) {
-      var opts = {
+    it('should throw error for unknown content-type', async function() {
+      const opts = {
         path: '/patch',
         headers: { 'content-type': 'x' },
         body: { hello: 'world' },
       };
 
-      this.client._patch(opts, function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: type is unknown: x');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isCodec', true);
-
-        should.not.exist(res);
-
-        done();
-      });
+      try {
+        await this.client._patch(opts);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: type is unknown: x');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isCodec', true);
+      }
     });
 
-    it('should return error for non-2xx', function(done) {
+    it('should return error for non-2xx', async function() {
       this.nock
         .post('/post')
         .reply(400);
 
-      this.client._post('/post', function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: bad request');
-        err.should.have.property('statusCode', 400);
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isResponse', true);
-
-        should.exist(res);
-        res.statusCode.should.eql(400);
-
-        done();
-      });
+      try {
+        await this.client._post('/post');
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: bad request');
+        should(err).have.property('statusCode', 400);
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isResponse', true);
+      }
     });
 
-    it('should set err.message to body text', function(done) {
+    it('should set err.message to body text', async function() {
       this.nock
         .post('/post')
         .reply(400, 'validation error', { 'content-type': 'text/plain' });
 
-      this.client._post('/post', function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: validation error');
-        err.should.have.property('statusCode', 400);
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isResponse', true);
-
-        should.exist(res);
-        res.statusCode.should.eql(400);
-
-        done();
-      });
+      try {
+        await this.client._post('/post');
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: validation error');
+        should(err).have.property('statusCode', 400);
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isResponse', true);
+      }
     });
 
-    it('should set err.message for unknown status codes', function(done) {
+    it('should set err.message for unknown status codes', async function() {
       this.nock
         .post('/post')
         .reply(499);
 
-      this.client._post('/post', function(err, res) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: request failed: 499');
-        err.should.have.property('statusCode', 499);
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isResponse', true);
-
-        should.exist(res);
-        res.statusCode.should.eql(499);
-
-        done();
-      });
+      try {
+        await this.client._post('/post');
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: request failed: 499');
+        should(err).have.property('statusCode', 499);
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isResponse', true);
+      }
     });
 
-    it('should emit log events', function(done) {
+    it('should emit log events', async function() {
       this.nock
         .post('/post', { name: 'world' })
         .reply(200, { hello: 'world' });
 
-      var events = [];
+      const events = [];
 
       this.client._opts.tags = ['class'];
       this.client.on('log', function() {
         events.push(Array.prototype.slice.call(arguments));
       });
 
-      var opts = {
+      const opts = {
         name: 'method',
         path: '/post',
         body: { name: 'world' },
@@ -1495,57 +1411,51 @@ describe('Client', function() {
         tags: ['test'],
       };
 
-      this.client._post(opts, function(err, res) {
-        should.not.exist(err);
+      const res = await this.client._post(opts);
+      should.exist(res);
 
-        should.exist(res);
+      should(events.length).eql(2);
 
-        events.length.should.eql(2);
+      should(events[0][0]).eql(['papi', 'request', 'test', 'class',
+        'method']);
+      should(events[0][1]).eql({
+        hostname: 'example.org',
+        port: 80,
+        path: '/post',
+        method: 'POST',
+        headers: {
+          key: 'value',
+          'content-type': 'application/json; charset=utf-8',
+          'content-length': 16,
+        },
+        proto: 'http',
+        host: 'example.org:80',
+      });
 
-        events[0][0].should.eql(['papi', 'request', 'test', 'class', 'method']);
-        events[0][1].should.eql({
-          hostname: 'example.org',
-          port: 80,
-          path: '/post',
-          method: 'POST',
-          headers: {
-            key: 'value',
-            'content-type': 'application/json; charset=utf-8',
-            'content-length': 16,
-          },
-          proto: 'http',
-          host: 'example.org:80',
-        });
-
-        events[1][0].should.eql(['papi', 'response', 'test', 'class',
-                                'method']);
-        events[1][1].should.eql({
-          statusCode: 200,
-          path: '/post',
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
-          remoteAddress: undefined,
-          remotePort: undefined,
-        });
-
-        done();
+      should(events[1][0]).eql(['papi', 'response', 'test', 'class',
+                              'method']);
+      should(events[1][1]).eql({
+        statusCode: 200,
+        path: '/post',
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        remoteAddress: undefined,
+        remotePort: undefined,
       });
     });
 
-    it('should call request extensions', function(done) {
-      var self = this;
+    it('should call request extensions', async function() {
+      const called = [];
+      const path = '/get';
+      const statusCode = 200;
 
-      var called = [];
-      var path = '/get';
-      var statusCode = 200;
-
-      self.nock
+      this.nock
         .get(path)
         .reply(statusCode, { hello: 'world' });
 
-      self.client._ext('onCreate', function(request, next) {
+      this.client._ext('onCreate', (request, next) => {
         should.exist(request);
 
         called.push('onCreate');
@@ -1553,7 +1463,7 @@ describe('Client', function() {
         next();
       });
 
-      self.client._ext('onRequest', function(request, next) {
+      this.client._ext('onRequest', (request, next) => {
         should.exist(request);
 
         called.push('onRequest');
@@ -1561,10 +1471,10 @@ describe('Client', function() {
         next();
       });
 
-      self.client._ext('onResponse', function(request, next) {
-        request.should.have.properties('opts', 'state');
+      this.client._ext('onResponse', (request, next) => {
+        should(request).have.properties('opts', 'state');
 
-        request.opts.should.eql({
+        should(request.opts).eql({
           headers: {},
           query: {},
           params: {},
@@ -1573,35 +1483,30 @@ describe('Client', function() {
           tags: ['testclient'],
         });
 
-        request.req.method.should.eql('GET');
-        request.req.headers.should.eql({ key: 'value' });
+        should(request.req.method).eql('GET');
+        should(request.req.headers).eql({ key: 'value' });
 
         should.not.exist(request.err);
         should.exist(request.res);
 
-        request.res.should.have.properties('statusCode', 'headers', 'body');
+        should(request.res).have.properties('statusCode', 'headers', 'body');
 
-        request.res.statusCode.should.eql(statusCode);
-        request.res.headers.should.eql({ 'content-type': 'application/json' });
-        request.res.body.should.eql({ hello: 'world' });
+        should(request.res.statusCode).eql(statusCode);
+        should(request.res.headers).eql({ 'content-type': 'application/json' });
+        should(request.res.body).eql({ hello: 'world' });
 
         called.push('onResponse');
 
         next();
       });
 
-      self.client._get('/get', function(err, res) {
-        should.not.exist(err);
+      const res = await this.client._get('/get');
+      should.exist(res);
 
-        should.exist(res);
-
-        called.should.eql(['onCreate', 'onRequest', 'onResponse']);
-
-        done();
-      });
+      should(called).eql(['onCreate', 'onRequest', 'onResponse']);
     });
 
-    it('should support retry', function(done) {
+    it('should support retry', async function() {
       this.nock
         .get('/retry')
         .reply(500, 'error1')
@@ -1610,9 +1515,9 @@ describe('Client', function() {
         .get('/retry')
         .reply(200, { hello: 'world' });
 
-      var responses = [];
+      const responses = [];
 
-      this.client._ext('onResponse', function(request, next) {
+      this.client._ext('onResponse', (request, next) => {
         responses.push(request.res.statusCode);
 
         if (Math.floor(request.res.statusCode / 100) !== 5) return next();
@@ -1620,22 +1525,18 @@ describe('Client', function() {
         request.retry();
       });
 
-      this.client._get('/retry', function(err, res) {
-        should.not.exist(err);
-        should.exist(res);
+      const res = await this.client._get('/retry');
+      should.exist(res);
 
-        responses.should.eql([500, 503, 200]);
-
-        done();
-      });
+      should(responses).eql([500, 503, 200]);
     });
 
-    it('should error retry when body is a stream', function(done) {
+    it('should error retry when body is a stream', async function() {
       this.nock
         .post('/retry', 'test')
         .reply(503);
 
-      this.client._ext('onResponse', function(request, next) {
+      this.client._ext('onResponse', (request, next) => {
         try {
           request.retry();
         } catch (err) {
@@ -1643,7 +1544,7 @@ describe('Client', function() {
         }
       });
 
-      var req = {
+      const req = {
         path: '/retry',
         body: new stream.Readable(),
       };
@@ -1651,27 +1552,27 @@ describe('Client', function() {
       req.body.push(Buffer.from('test'));
       req.body.push(null);
 
-      this.client._post(req, function(err) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: request is not ' +
+      try {
+        await this.client._post(req);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: request is not ' +
           'retryable');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        done();
-      });
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isValidation', true);
+      }
     });
 
-    it('should retry when body is a function stream', function(done) {
+    it('should retry when body is a function stream', async function() {
       this.nock
         .post('/retry', 'test')
         .reply(503)
         .post('/retry', 'test')
         .reply(200);
 
-      var responses = [];
+      const responses = [];
 
-      this.client._ext('onResponse', function(request, next) {
+      this.client._ext('onResponse', (request, next) => {
         responses.push(request.res.statusCode);
 
         if (Math.floor(request.res.statusCode / 100) !== 5) return next();
@@ -1679,34 +1580,30 @@ describe('Client', function() {
         request.retry();
       });
 
-      var body = function() {
-        var s = new stream.Readable();
+      const body = () => {
+        const s = new stream.Readable();
         s.push(Buffer.from('test'));
         s.push(null);
         return s;
       };
 
-      var req = {
+      const req = {
         path: '/retry',
         body: body,
       };
 
-      this.client._post(req, function(err, res) {
-        should.not.exist(err);
-        should.exist(res);
+      const res = await this.client._post(req);
+      should.exist(res);
 
-        responses.should.eql([503, 200]);
-
-        done();
-      });
+      should(responses).eql([503, 200]);
     });
 
-    it('should error retry when pipe is stream.Writable', function(done) {
+    it('should error retry when pipe is stream.Writable', async function() {
       this.nock
         .get('/retry')
         .reply(500);
 
-      this.client._ext('onResponse', function(request, next) {
+      this.client._ext('onResponse', (request, next) => {
         try {
           request.retry();
         } catch (err) {
@@ -1714,32 +1611,32 @@ describe('Client', function() {
         }
       });
 
-      var req = {
+      const req = {
         path: '/retry',
         pipe: new stream.Writable(),
       };
 
-      this.client._get(req, function(err) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: request is not ' +
+      try {
+        await this.client._get(req);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: request is not ' +
           'retryable');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isValidation', true);
-
-        done();
-      });
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isValidation', true);
+      }
     });
 
-    it('should retry when pipe is a function stream', function(done) {
+    it('should retry when pipe is a function stream', async function() {
       this.nock
         .get('/retry')
         .reply(503)
         .get('/retry')
         .reply(200, { hello: 'world' });
 
-      var responses = [];
+      const responses = [];
 
-      this.client._ext('onResponse', function(request, next) {
+      this.client._ext('onResponse', (request, next) => {
         responses.push(request.res.statusCode);
 
         if (Math.floor(request.res.statusCode / 100) !== 5) return next();
@@ -1747,14 +1644,14 @@ describe('Client', function() {
         request.retry();
       });
 
-      var chunks;
+      let chunks;
 
-      var pipe = function() {
+      const pipe = () => {
         chunks = [];
 
-        var bodyPipe = new stream.Writable();
+        const bodyPipe = new stream.Writable();
 
-        bodyPipe._write = function(chunk, encoding, callback) {
+        bodyPipe._write = (chunk, encoding, callback) => {
           chunks.push(chunk);
 
           callback();
@@ -1763,25 +1660,20 @@ describe('Client', function() {
         return bodyPipe;
       };
 
-      var opts = {
+      const opts = {
         path: '/retry',
         pipe: pipe,
       };
 
-      this.client._get(opts, function(err, res) {
-        should.not.exist(err);
+      const res = await this.client._get(opts);
+      should.exist(res);
 
-        should.exist(res);
+      should(Buffer.concat(chunks).toString()).eql('{"hello":"world"}');
 
-        Buffer.concat(chunks).toString().should.eql('{"hello":"world"}');
-
-        responses.should.eql([503, 200]);
-
-        done();
-      });
+      should(responses).eql([503, 200]);
     });
 
-    it('should execute all handlers', function(done) {
+    it('should execute all handlers', async function() {
       this.nock
         .get('/get')
         .reply(404, 'ok');
@@ -1801,100 +1693,93 @@ describe('Client', function() {
         should.exist(request.res);
         should(request.res.body).equal(undefined);
 
-        next(false, null, 'world');
+        next(false, 'world');
       }
 
-      this.client._get('/get', handleNotFound, check, function(err, hello) {
-        should.not.exist(err);
-
-        hello.should.eql('world');
-
-        done();
-      });
+      const hello = await this.client._get('/get', handleNotFound, check);
+      should(hello).eql('world');
     });
 
-    it('should timeout request', function(done) {
+    it('should timeout request', async function() {
       this.nock
         .get('/get')
         .delayConnection(200)
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/get',
         timeout: 10,
       };
 
-      this.client._get(opts, function(err) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: request timed out ' +
+      try {
+        await this.client._get(opts);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: request timed out ' +
           '(10ms)');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isTimeout', true);
-
-        done();
-      });
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isTimeout', true);
+      }
     });
 
-    it('should abort request', function(done) {
+    it('should abort request', async function() {
       this.nock
         .get('/get')
         .delayConnection(200)
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/get',
         ctx: new events.EventEmitter(),
       };
 
-      this.client._get(opts, function(err) {
-        should.exist(err);
-        err.should.have.property('message', 'testclient: request aborted');
-        err.should.have.property('isPapi', true);
-        err.should.have.property('isAbort', true);
+      const future = this.client._get(opts);
 
-        done();
-      });
-
-      setTimeout(function() {
+      setTimeout(() => {
         opts.ctx.emit('cancel');
       }, 50);
+
+      try {
+        await future;
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message', 'testclient: request aborted');
+        should(err).have.property('isPapi', true);
+        should(err).have.property('isAbort', true);
+      }
     });
 
     // this is get coverage for clearTimeout and ctx removeEventListener on end
-    it('should clean abort/timeout on end', function(done) {
+    it('should clean abort/timeout on end', async function() {
       this.nock
         .get('/get')
         .reply(200);
 
-      var opts = {
+      const opts = {
         path: '/get',
         ctx: new events.EventEmitter(),
         timeout: 100,
       };
 
-      this.client._get(opts, function(err) {
-        should.not.exist(err);
-
-        done();
-      });
+      await this.client._get(opts);
     });
 
     // this is get coverage for clearTimeout and ctx removeEventListener on
     // error
-    it('should clean abort/timeout on error', function(done) {
-      var opts = {
+    it('should clean abort/timeout on error', async function() {
+      const opts = {
         path: '/get',
         ctx: new events.EventEmitter(),
         timeout: 100,
       };
 
-      this.client._get(opts, function(err) {
-        should.exist(err);
-
-        err.message.should.containEql('Nock: No match for request');
-
-        done();
-      });
+      try {
+        await this.client._get(opts);
+        should.fail();
+      } catch (err) {
+        should(err).have.property('message');
+        should(err.message).containEql('Nock');
+      }
     });
   });
 });

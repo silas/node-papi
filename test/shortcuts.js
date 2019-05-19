@@ -2,14 +2,10 @@
 
 /* jshint expr: true */
 
-/**
- * Module dependencies.
- */
+const nock = require('nock');
+const should = require('should');
 
-var nock = require('nock');
-var should = require('should');
-
-var papi = require('../lib');
+const papi = require('../lib');
 
 /**
  * Tests
@@ -29,102 +25,70 @@ describe('Shortcuts', function() {
     this.nock = nock(this.baseUrl);
   });
 
-  it('should throw when no callback provided', function() {
-    (function() {
-      papi.request();
-    }).should.throw('no callback: url required');
+  it('should require url', function() {
+    return should(papi.request()).rejectedWith('url required');
   });
 
-  it('should require url', function(done) {
-    papi.request(null, function(err) {
-      should.exist(err);
-
-      err.message.should.eql('url required');
-
-      done();
-    });
+  it('should require url to be string', function() {
+    return should(papi.request({ url: true }))
+      .rejectedWith('url must be a string');
   });
 
-  it('should require url to be string', function(done) {
-    papi.request({ url: true }, function(err) {
-      should.exist(err);
-
-      err.message.should.eql('url must be a string');
-
-      done();
-    });
-  });
-
-  it('should make request', function(done) {
+  it('should make request', async function() {
     this.nock
       .get('/test/world')
       .reply(200);
 
-    var opts = {
+    const opts = {
       method: 'get',
       url: this.baseUrl + '/test/{hello}',
       params: { hello: 'world' },
     };
 
-    papi.request(opts, function(err, res) {
-      should.not.exist(err);
-
-      res.statusCode.should.eql(200);
-
-      done();
-    });
+    const res = await papi.request(opts);
+    should(res).have.property('statusCode', 200);
   });
 
-  it('should make request with string url', function(done) {
+  it('should make request with string url', async function() {
     this.nock
       .get('/test')
       .reply(200);
 
-    papi.request(this.baseUrl + '/test', function(err, res) {
-      should.not.exist(err);
-
-      res.statusCode.should.eql(200);
-
-      done();
-    });
+    const res = await papi.request(this.baseUrl + '/test');
+    should(res).have.property('statusCode', 200);
   });
 
-  it('should make request with middleware', function(done) {
+  it('should make request with middleware', async function() {
     this.nock
       .get('/test')
       .reply(200);
 
-    var opts = {
+    const opts = {
       method: 'get',
       url: this.baseUrl + '/test',
     };
 
-    var ok = {};
+    const ok = {};
 
-    var one = function(request, next) {
+    const one = (request, next) => {
       ok.one = true;
 
       next();
     };
 
-    var two = function(request, next) {
+    const two = (request, next) => {
       ok.two = true;
 
       next();
     };
 
-    papi.request(opts, one, two, function(err, res) {
-      should.not.exist(err);
+    const res = await papi.request(opts, one, two);
+    should(res).have.property('statusCode', 200);
 
-      res.statusCode.should.eql(200);
-
-      ok.should.eql({ one: true, two: true });
-
-      done();
-    });
+    should(ok).eql({ one: true, two: true });
   });
 
-  it('should make get request', function(done) {
+  it('should make get request', async function() {
     this.nock
       .get('/get')
       .reply(200,
@@ -132,149 +96,104 @@ describe('Shortcuts', function() {
         { 'content-type': 'application/json' }
       );
 
-    var opts = {
+    const opts = {
       url: this.baseUrl + '/get',
     };
 
-    papi.get(opts, function(err, res) {
-      should.not.exist(err);
-
-      should.exist(res);
-      should(res.body).eql({ is: 'ok' });
-
-      res.statusCode.should.eql(200);
-
-      done();
-    });
+    const res = await papi.get(opts);
+    should(res).have.property('statusCode', 200);
+    should(res.body).eql({ is: 'ok' });
   });
 
-  it('should require url in method calls', function(done) {
-    papi.get(null, function(err) {
-      should.exist(err);
-
-      err.message.should.eql('url required');
-
-      done();
-    });
+  it('should require url in method calls', function() {
+    return should(papi.get()).rejectedWith('url required');
   });
 
-  it('should use middleware in method calls', function(done) {
+  it('should use middleware in method calls', async function() {
     this.nock
       .get('/test')
       .reply(200);
 
-    var ok = {};
+    const ok = {};
 
-    var one = function(request, next) {
+    const one = (request, next) => {
       ok.one = true;
 
       next();
     };
 
-    var two = function(request, next) {
+    const two = (request, next) => {
       ok.two = true;
 
       next();
     };
 
-    papi.get(this.baseUrl + '/test', one, two, function(err, res) {
-      should.not.exist(err);
+    const res = await papi.get(this.baseUrl + '/test', one, two);
+    should(res).have.property('statusCode', 200);
 
-      res.statusCode.should.eql(200);
-
-      ok.should.eql({ one: true, two: true });
-
-      done();
-    });
+    should(ok).eql({ one: true, two: true });
   });
 
-  it('should make head request', function(done) {
+  it('should make head request', async function() {
     this.nock
       .head('/head')
       .reply(200);
 
-    papi.head(this.baseUrl + '/head', function(err, res) {
-      should.not.exist(err);
-
-      should.exist(res);
-
-      res.statusCode.should.eql(200);
-
-      done();
-    });
+    const res = await papi.head(this.baseUrl + '/head');
+    should(res).have.property('statusCode', 200);
   });
 
-  it('should make post request', function(done) {
+  it('should make post request', async function() {
     this.nock
       .post('/post', { hello: 'world' })
       .reply(200);
 
-    var opts = {
+    const opts = {
       url: this.baseUrl + '/post',
       type: 'form',
       body: { hello: 'world' },
     };
 
-    papi.post(opts, function(err, res) {
-      should.not.exist(err);
-
-      res.statusCode.should.eql(200);
-
-      done();
-    });
+    const res = await papi.post(opts);
+    should(res).have.property('statusCode', 200);
   });
 
-  it('should make put request', function(done) {
+  it('should make put request', async function() {
     this.nock
       .put('/put', { hello: 'world' })
       .reply(200);
 
-    var opts = {
+    const opts = {
       url: this.baseUrl + '/put',
       type: 'json',
       body: { hello: 'world' },
     };
 
-    papi.put(opts, function(err, res) {
-      should.not.exist(err);
-
-      res.statusCode.should.eql(200);
-
-      done();
-    });
+    const res = await papi.put(opts);
+    should(res).have.property('statusCode', 200);
   });
 
-  it('should make delete request', function(done) {
+  it('should make delete request', async function() {
     this.nock
       .delete('/delete')
       .reply(200);
 
-    papi.del(this.baseUrl + '/delete', function(err, res) {
-      should.not.exist(err);
-
-      res.statusCode.should.eql(200);
-
-      done();
-    });
+    const res = await papi.del(this.baseUrl + '/delete');
+    should(res).have.property('statusCode', 200);
   });
 
-  it('should make patch request', function(done) {
+  it('should make patch request', async function() {
     this.nock
       .patch('/patch', { hello: 'world' })
       .reply(200);
 
-    var opts = {
+    const opts = {
       url: this.baseUrl + '/patch',
       type: 'json',
       body: { hello: 'world' },
     };
 
-    papi.patch(opts, function(err, res) {
-      should.not.exist(err);
-
-      res.statusCode.should.eql(200);
-
-      done();
-    });
+    const res = await papi.patch(opts);
+    should(res).have.property('statusCode', 200);
   });
 });

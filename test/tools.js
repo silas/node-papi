@@ -1,64 +1,63 @@
 'use strict';
 
-/**
- * Module dependencies.
- */
+const lodash = require('lodash');
+const nock = require('nock');
+const should = require('should');
 
-require('should');
-
-var bluebird = require('bluebird');
-var lodash = require('lodash');
-var nock = require('nock');
-var should = require('should');
-var util = require('util');
-
-var papi = require('../lib');
-var tools = require('../lib/tools');
+const papi = require('../lib');
+const tools = require('../lib/tools');
 
 /**
  * Example test
  */
 
-function ExampleSub(example) {
-  this.example = example;
+class ExampleSub {
+  constructor(example) {
+    this.example = example;
+  }
+
+  test(one, callback) {
+    const body = { one: one };
+    return this.example._post({ path: '/test/test', body: body }, callback);
+  }
 }
 
-ExampleSub.prototype.test = function(one, callback) {
-  var body = { one: one };
-  return this.example._post({ path: '/test/test', body: body }, callback);
-};
+class Example extends papi.Client {
+  constructor(opts) {
+    super(opts);
 
-function Example(opts) {
-  papi.Client.call(this, opts);
+    this.sub1 = new Example.Sub1(this);
+    this.sub2 = new Example.Sub2(this);
+  }
 
-  this.sub1 = new Example.Sub1(this);
-  this.sub2 = new Example.Sub2(this);
+  test(callback) {
+    return this._get({ path: '/test' }, callback);
+  }
+
+  test2() {
+    throw new Error('ok');
+  }
+
+  _skip() {
+    return;
+  }
+
+  test3(callback) {
+    return this._get({ path: '/test' }, callback);
+  }
+
+  fun() {
+    return 49;
+  }
 }
 
 Example.Sub1 = ExampleSub;
+
 Example.Sub2 = ExampleSub;
-Example.meta = {};
 
-util.inherits(Example, papi.Client);
-
-Example.prototype.test = function(callback) {
-  return this._get({ path: '/test' }, callback);
-};
-
-Example.prototype.test2 = function() {
-  throw new Error('ok');
-};
-
-Example.prototype._skip = function() {};
-
-Example.meta.test3 = { type: 'alias' };
-
-Example.prototype.test3 = Example.prototype.test;
-
-Example.meta.fun = { type: 'sync' };
-
-Example.prototype.fun = function() {
-  return 49;
+Example.meta = {
+  test3: { type: 'alias' },
+  fun: { type: 'sync' },
 };
 
 /**
@@ -81,27 +80,27 @@ describe('tools', function() {
 
   describe('walk', function() {
     it('should work', function() {
-      should(function() { tools.walk(); }).throw('invalid arguments');
+      should(() => tools.walk()).throw('invalid arguments');
 
-      var setup = function(tree, depth, data) {
+      const setup = (tree, depth, data) => {
         data = data || [];
 
-        var prefix = lodash.repeat(' ', depth);
+        const prefix = lodash.repeat(' ', depth);
 
         data.push(prefix + tree.name);
 
-        lodash.each(tree.methods, function(method) {
+        lodash.each(tree.methods, method => {
           data.push(prefix + ' - ' + method.name + ' (' + method.type + ')');
         });
 
-        lodash.each(tree.objects, function(tree) {
+        lodash.each(tree.objects, tree => {
           setup(tree, depth + 1, data);
         });
 
         return data;
       };
 
-      var data = [
+      const data = [
         ' - test (callback)',
         ' - test2 (callback)',
         ' - test3 (alias)',
@@ -112,133 +111,12 @@ describe('tools', function() {
         '  - test (callback)',
       ];
 
-      setup(tools.walk(Example), 0)
-        .should.eql(['Example'].concat(data));
-      setup(tools.walk(Example, 'Foo'), 0)
-        .should.eql(['Foo'].concat(data));
-      setup(tools.walk(Example, 'A', { name: 'B' }), 0)
-        .should.eql(['B'].concat(data));
-    });
-  });
-
-  describe('promisify', function() {
-    beforeEach(function() {
-      this._promise = global.Promise;
-      if (!this._promise) global.Promise = bluebird;
-
-      this.client = new Example({ baseUrl: 'http://example.org' });
-    });
-
-    afterEach(function() {
-      if (this._promise) {
-        global.Promise = this._promise;
-      } else {
-        delete global.Promise;
-      }
-    });
-
-    describe('constructor', function() {
-      it('should work', function() {
-        var c = this.client;
-
-        should(function() {
-          tools.promisify();
-        }).throw('client required');
-
-        tools.promisify(c);
-
-        // no global promise
-        delete global.Promise;
-        should(function() {
-          tools.promisify(c);
-        }).throw('wrapper required');
-
-        should(function() {
-          tools.promisify(c, true);
-        }).throw('wrapper must be a function');
-
-        tools.promisify(c, function() {});
-      });
-    });
-
-    describe('default promise', function() {
-      it('should handle resolve', function(done) {
-        tools.promisify(this.client);
-
-        this.nock.get('/test').reply(200);
-
-        this.client.test().then(function(res) {
-          should(res.statusCode).equal(200);
-          done();
-        });
-      });
-
-      it('should handle callback reject', function(done) {
-        tools.promisify(this.client);
-
-        this.nock.get('/test').reply(500);
-
-        this.client.test().catch(function(err) {
-          should(err).have.property('message', 'internal server error');
-          done();
-        });
-      });
-
-      it('should handle sync reject', function(done) {
-        tools.promisify(this.client);
-
-        this.client.test2().catch(function(err) {
-          should(err).have.property('message', 'ok');
-          done();
-        });
-      });
-
-      it('should handle callback success', function(done) {
-        tools.promisify(this.client);
-
-        this.nock.get('/test').reply(200);
-
-        this.client.test(function(err, res) {
-          should.not.exist(err);
-          should(res.statusCode).equal(200);
-          done();
-        });
-      });
-
-      it('should handle callback failure', function(done) {
-        tools.promisify(this.client);
-
-        this.nock.get('/test').reply(500);
-
-        this.client.test(function(err) {
-          should(err).have.property('message', 'internal server error');
-          done();
-        });
-      });
-    });
-
-    describe('bluebird promise', function() {
-      it('should handle resolve', function(done) {
-        tools.promisify(this.client, bluebird.fromCallback);
-
-        this.nock.get('/test').reply(200);
-
-        this.client.test().then(function(res) {
-          should(res.statusCode).equal(200);
-          done();
-        });
-      });
-
-      it('should handle callback reject', function(done) {
-        tools.promisify(this.client, bluebird.fromCallback);
-
-        this.nock.get('/test').reply(500);
-
-        this.client.test().catch(function(err) {
-          should(err).have.property('message', 'internal server error');
-          done();
-        });
-      });
+      should(setup(tools.walk(Example), 0))
+        .eql(['Example'].concat(data));
+      should(setup(tools.walk(Example, 'Foo'), 0))
+        .eql(['Foo'].concat(data));
+      should(setup(tools.walk(Example, 'A', { name: 'B' }), 0))
+        .eql(['B'].concat(data));
     });
   });
 });

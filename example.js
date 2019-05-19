@@ -1,83 +1,68 @@
 'use strict';
 
-/**
- * Module dependencies.
- */
-
-var papi = require('./lib');
-var util = require('util');
+const papi = require('./lib');
 
 /**
  * GitHub API client
  */
+class GitHub extends papi.Client {
+  constructor(opts) {
+    opts = opts || {};
 
-function GitHub(opts) {
-  opts = opts || {};
+    if (!opts.baseUrl) {
+      opts.baseUrl = 'https://api.github.com';
+    }
+    if (!opts.headers) {
+      opts.headers = {};
+    }
+    if (!opts.headers.accept) {
+      opts.headers.accept = 'application/vnd.github.v3+json';
+    }
+    if (!opts.headers['user-agent']) {
+      opts.headers['user-agent'] = 'PapiGitHub/0.1.0';
+    }
+    if (opts.tags) {
+      opts.tags = ['github'].concat(opts.tags);
+    } else {
+      opts.tags = ['github'];
+    }
+    if (!opts.timeout) {
+      opts.timeout = 60 * 1000;
+    }
 
-  if (!opts.baseUrl) {
-    opts.baseUrl = 'https://api.github.com';
-  }
-  if (!opts.headers) {
-    opts.headers = {};
-  }
-  if (!opts.headers.accept) {
-    opts.headers.accept = 'application/vnd.github.v3+json';
-  }
-  if (!opts.headers['user-agent']) {
-    opts.headers['user-agent'] = 'PapiGitHub/0.1.0';
-  }
-  if (opts.tags) {
-    opts.tags = ['github'].concat(opts.tags);
-  } else {
-    opts.tags = ['github'];
-  }
-  if (!opts.timeout) {
-    opts.timeout = 60 * 1000;
+    super(opts);
+
+    if (opts.debug) {
+      this.on('log', console.log);
+    }
   }
 
-  papi.Client.call(this, opts);
+  /**
+   * Get user gists
+   */
+  async gists(username) {
+    const opts = {
+      path: '/users/{username}/gists',
+      params: { username: username },
+    };
 
-  if (opts.debug) {
-    this.on('log', console.log);
+    const res = await this._get(opts);
+    return res.body;
   }
 }
 
-util.inherits(GitHub, papi.Client);
+// Print gists for user `silas`
+async function main() {
+  const github = new GitHub({ debug: true });
 
-/**
- * Get user gists
- */
+  const gists = await github.gists('silas');
 
-GitHub.prototype.gists = function(username, callback) {
-  var opts = {
-    path: '/users/{username}/gists',
-    params: { username: username },
-  };
+  console.log('----');
 
-  return this._get(opts, callback);
-};
-
-/**
- * Print gists for user `silas`
- */
-
-function main() {
-  var github = new GitHub({ debug: true });
-
-  github.gists('silas', function(err, res) {
-    if (err) throw err;
-
-    console.log('----');
-
-    res.body.forEach(function(gist) {
-      if (gist.description) console.log(gist.description);
-    });
+  gists.forEach(function(gist) {
+    if (gist.description) console.log(gist.description);
   });
 }
-
-/**
- * Initialize
- */
 
 if (require.main === module) {
   main();
