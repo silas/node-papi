@@ -101,14 +101,14 @@ describe('tools', function() {
       };
 
       const data = [
-        ' - test (callback)',
-        ' - test2 (callback)',
+        ' - test (promise)',
+        ' - test2 (promise)',
         ' - test3 (alias)',
         ' - fun (sync)',
         ' Sub1',
-        '  - test (callback)',
+        '  - test (promise)',
         ' Sub2',
-        '  - test (callback)',
+        '  - test (promise)',
       ];
 
       should(setup(tools.walk(Example), 0))
@@ -117,6 +117,46 @@ describe('tools', function() {
         .eql(['Foo'].concat(data));
       should(setup(tools.walk(Example, 'A', { name: 'B' }), 0))
         .eql(['B'].concat(data));
+    });
+  });
+
+  describe('callbackify', function() {
+    beforeEach(function() {
+      this.client = new Example({ baseUrl: 'http://example.org' });
+    });
+
+    it('should work', function() {
+      const c = this.client;
+
+      should(() => {
+        tools.callbackify();
+      }).throw('client required');
+
+      tools.callbackify(c);
+    });
+
+    it('should handle ok', function(done) {
+      tools.callbackify(this.client);
+
+      this.nock.get('/test').reply(200);
+
+      this.client.test((err, res) => {
+        should.not.exist(err);
+        should(res).have.property('statusCode', 200);
+        done();
+      });
+    });
+
+    it('should handle response error', function(done) {
+      tools.callbackify(this.client);
+
+      this.nock.get('/test').reply(500);
+
+      this.client.test((err) => {
+        should(err).have.property('message', 'internal server error');
+        should(err).have.property('statusCode', 500);
+        done();
+      });
     });
   });
 });
