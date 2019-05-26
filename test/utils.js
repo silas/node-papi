@@ -13,7 +13,7 @@ function inherited(prototype, properties) {
   function Parent() {}
 
   function Child() {
-    for (var key in properties) {
+    for (const key in properties) {
       this[key] = properties[key];
     }
   }
