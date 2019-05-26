@@ -30,8 +30,8 @@ class Example extends papi.Client {
     this.sub2 = new Example.Sub2(this);
   }
 
-  test(callback) {
-    return this._get({ path: '/test' }, callback);
+  test() {
+    return this._get({ path: '/test' });
   }
 
   test2() {
@@ -42,8 +42,8 @@ class Example extends papi.Client {
     return;
   }
 
-  test3(callback) {
-    return this._get({ path: '/test' }, callback);
+  test3() {
+    return this._get({ path: '/test' });
   }
 
   fun() {
