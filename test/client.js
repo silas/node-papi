@@ -558,7 +558,7 @@ describe('Client', function() {
 
           res.statusCode = 200;
           res.headers = {};
-          res.connection = {
+          res.socket = {
             remoteAddress: '127.0.0.1',
             remotePort: 80,
           };
@@ -1428,8 +1428,6 @@ describe('Client', function() {
           'content-type': 'application/json; charset=utf-8',
           'content-length': 16,
         },
-        proto: 'http',
-        host: 'example.org:80',
       });
 
       should(events[1][0]).eql(['papi', 'response', 'test', 'class',
@@ -1441,8 +1439,8 @@ describe('Client', function() {
         headers: {
           'content-type': 'application/json',
         },
-        remoteAddress: undefined,
-        remotePort: undefined,
+        remoteAddress: '127.0.0.1',
+        remotePort: 80,
       });
     });
 
