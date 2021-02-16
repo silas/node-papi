@@ -4,24 +4,22 @@
   "description": "Build HTTP API clients",
   "main": "lib",
   "devDependencies": {
-    "async": "^2.6.1",
     "debug": "^4.1.1",
     "jscs": "^3.0.7",
     "jshint": "^2.9.5",
     "lodash": "^4.17.10",
-    "mocha": "^6.1.4",
-    "nock": "^10.0.6",
-    "nyc": "^14.1.1",
+    "mocha": "^8.3.0",
+    "nock": "^13.0.7",
+    "nyc": "^15.1.0",
     "request": "^2.87.0",
     "should": "^13.2.1",
-    "sinon": "^7.3.2"
+    "sinon": "^9.2.4"
   },
   "engines": {
-    "node": ">=8.2.0"
+    "node": ">=10.0.0"
   },
   "scripts": {
     "cover": "nyc --reporter=lcov _mocha --recursive && open coverage/lcov-report/index.html",
-    "bench": "BENCHMARK=true mocha test/benchmark.js",
     "test": "jshint lib test && jscs lib test && nyc _mocha --recursive --check-leaks --globals Promise && nyc check-coverage --statements 100 --functions 100 --branches 100 --lines 100"
   },
   "repository": {
