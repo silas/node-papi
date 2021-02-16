@@ -1,10 +1,11 @@
 *.log
 .env
+.github
 .istanbul.yml
 .jscs.json
 .jshintrc
 .npmignore
-.rock.yml
+.nyc_output
 config
 coverage
 example.js
