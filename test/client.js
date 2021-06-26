@@ -11,7 +11,6 @@ const nock = require('nock');
 const should = require('should');
 const sinon = require('sinon');
 const stream = require('stream');
-const url = require('url');
 
 const meta = require('../package.json');
 const papi = require('../lib');
@@ -20,27 +19,34 @@ const FORM = 'application/x-www-form-urlencoded';
 const CHARSET = 'charset=utf-8';
 const BASE_URL = 'http://example.org';
 
-const make = () => new papi.Client(BASE_URL);
+const make = (baseUrl) => new papi.Client(baseUrl || BASE_URL);
 
 describe('Client', function() {
   describe('new', function() {
     it('should accept string as baseUrl', function() {
       const client = make();
 
-      const baseUrl = client._opts.baseUrl;
-
-      should(baseUrl).eql({
-        auth: null,
+      should(client._opts.baseUrl).eql({
         hostname: 'example.org',
         path: '',
-        port: null,
         protocol: 'http:'
+      });
+    });
+
+    it('should accept auth in baseUrl', function() {
+      const client = make('https://:pass@example.org/test');
+
+      should(client._opts.baseUrl).eql({
+        auth: ':pass',
+        hostname: 'example.org',
+        path: '/test',
+        protocol: 'https:'
       });
     });
 
     it('should not mutate options', function() {
       const options = {
-        baseUrl: url.parse('http://example.org'),
+        baseUrl: new URL('http://example.org'),
         headers: { hello: 'world' },
         type: 'text',
         encoders: { text: () => undefined },
@@ -156,7 +162,7 @@ describe('Client', function() {
     it('should register extension', function() {
       const client = make();
 
-      should(client._exts).be.empty;
+      should(client._exts).be.empty();
 
       const name = 'test';
 

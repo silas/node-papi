@@ -188,7 +188,7 @@ client._plugin(require('papi-retry'));
 ```
 
 <a name="shortcuts"></a>
-### papi.request(request, [callback...], callback)
+### papi.request(request, [callback...])
 
 Shortcuts for making one-off requests.
 
