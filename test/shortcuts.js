@@ -58,6 +58,15 @@ describe('Shortcuts', function() {
     should(res).have.property('statusCode', 200);
   });
 
+  it('should make request with URL', async function() {
+    this.nock
+        .get('/test')
+        .reply(200);
+
+    const res = await papi.request(new URL('/test', this.baseUrl));
+    should(res).have.property('statusCode', 200);
+  });
+
   it('should make request with middleware', async function() {
     this.nock
       .get('/test')
