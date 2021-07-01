@@ -4,10 +4,13 @@
 
 const debug = require('debug')('papi');
 const events = require('events');
+const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const lodash = require('lodash');
 const nock = require('nock');
+const os = require('os');
+const path = require('path');
 const should = require('should');
 const sinon = require('sinon');
 const stream = require('stream');
@@ -484,6 +487,50 @@ describe('Client', function() {
         should(err).have.property('isPapi', true);
         should(err).have.property('isCodec', true);
       }
+    });
+
+    describe('socketPath', function() {
+      beforeEach(async function() {
+        const prefix = path.join(os.tmpdir(), 'papi-test-');
+        this.tmpDir = await fs.promises.mkdtemp(prefix);
+
+        this.server = http.createServer((req, res) => {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            method: req.method,
+            path: req.url,
+          }));
+        });
+
+        const socketPath = path.join(this.tmpDir, 'test.socket');
+
+        await new Promise((resolve, reject) => {
+          this.server.listen(socketPath, () => {
+            resolve();
+          });
+          this.server.on('error', reject);
+        });
+
+        this.client = new papi.Client({
+          baseUrl: BASE_URL,
+          socketPath: socketPath,
+        });
+      });
+
+      afterEach(async function() {
+        this.server.close();
+
+        await fs.promises.rmdir(this.tmpDir);
+      });
+
+      it('should work', async function() {
+        const res = await this.client._get('/test');
+
+        should(res.body).eql({
+          method: 'GET',
+          path: '/test',
+        });
+      });
     });
   });
 

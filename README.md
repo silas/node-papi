@@ -27,6 +27,7 @@ Options
  * encoders (Object&lt;string, Function&gt;, optional): an object that maps a mime type to a function. The function should accept an object and return a Buffer.
  * decoders (Object&lt;string, Function&gt;, optional): an object that maps a mime type to a function. The function should accept a Buffer or string (must support both) and return an object.
  * tags (string[], optional): tags included in `_log` calls
+ * socketPath (string, optional): unix socket path (baseUrl is still required)
  * timeout (number, optional): default number of milliseconds before request is aborted
 
 Advanced options
