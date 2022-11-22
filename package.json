@@ -1,8 +1,11 @@
 {
   "name": "papi",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Build HTTP API clients",
-  "main": "lib",
+  "main": "./lib",
+  "files": [
+    "./lib"
+  ],
   "devDependencies": {
     "debug": "^4.1.1",
     "jscs": "^3.0.7",
@@ -32,7 +35,6 @@
     "http",
     "rest"
   ],
-  "files": ["/lib"],
   "author": "Silas Sewell <silas@sewell.org>",
   "license": "MIT",
   "bugs": {
