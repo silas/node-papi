@@ -32,6 +32,7 @@
     "http",
     "rest"
   ],
+  "files": ["/lib"],
   "author": "Silas Sewell <silas@sewell.org>",
   "license": "MIT",
   "bugs": {
