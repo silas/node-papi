@@ -826,7 +826,7 @@ describe('Client', function() {
 
     it('should handle https explicit', function(done) {
       const protocol = 'https:';
-      const auth = 'user:pass';
+      const auth = 'user^2:pass^3';
       const port = '4433';
       const hostname = 'example.org';
       const method = 'GET';
