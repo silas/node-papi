@@ -1,3 +1,6 @@
+> [!CAUTION]
+> This project is no longer maintained.
+
 # Papi
 
 This is a library for building HTTP API clients.
